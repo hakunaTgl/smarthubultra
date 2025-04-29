@@ -1,215 +1,211 @@
 import { IDB, showToast, speak, logActivity } from './utils.js';
 import { generateBehavioralDNA, validateBotBehavior } from './behavioralDNA.js';
 import { setupCollaborativeMode } from './collab.js';
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, set, update, remove } from 'firebase/database';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAPPllpKiFOcjqxnuk2tRvithFYKSzkQAc",
+  authDomain: "smarthubultra.firebaseapp.com",
+  databaseURL: "https://smarthubultra-default-rtdb.firebaseio.com",
+  projectId: "smarthubultra",
+  storageBucket: "smarthubultra.firebasestorage.app",
+  messagingSenderId: "12039705608",
+  appId: "1:12039705608:web:f1a4383b245275eaa26dbd",
+  measurementId: "G-V24P3DHL9M"
+};
+
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
 
 export async function loadBotsPage() {
-  const botList = document.getElementById('bot-list');
-  botList.innerHTML = '';
-  const bots = await IDB.getAll('bots');
-  const user = localStorage.getItem('currentUser');
-  bots.filter(b => b.creator === user || b.collaborators?.includes(user)).forEach(bot => {
-    const div = document.createElement('div');
-    div.className = 'bot-item';
-    div.innerHTML = `
-      <p><b>${bot.name}</b> (${bot.purpose})</p>
-      <button class="edit-bot btn blue-glow" data-id="${bot.id}">Edit</button>
-      <button class="run-bot btn green-glow" data-id="${bot.id}">Run</button>
-      <button class="delete-bot btn red-glow" data-id="${bot.id}">Delete</button>
-    `;
-    botList.appendChild(div);
-  });
-
-  document.getElementById('use-wizard').addEventListener('change', () => {
-    document.getElementById('creation-wizard').classList.toggle('hidden');
-  });
-
-  document.getElementById('submit-wizard').addEventListener('click', createBotFromWizard);
-  document.getElementById('file-input').addEventListener('change', handleFileUpload);
-  document.getElementById('text-input-btn').addEventListener('click', createBotFromText);
-  document.getElementById('voice-input-btn').addEventListener('click', () => {
-    speak('Voice input not implemented yet.');
-    showToast('Voice input not implemented yet.');
-  });
-  document.getElementById('fusion-btn').addEventListener('click', fuseBots);
-  document.querySelectorAll('.edit-bot').forEach(btn => {
-    btn.addEventListener('click', () => editBot(btn.dataset.id));
-  });
-  document.querySelectorAll('.run-bot').forEach(btn => {
-    btn.addEventListener('click', () => runBot(btn.dataset.id));
-  });
-  document.querySelectorAll('.delete-bot').forEach(btn => {
-    btn.addEventListener('click', () => deleteBot(btn.dataset.id));
-  });
-
-  loadMarketplace();
-}
-
-async function createBotFromWizard() {
-  const description = document.getElementById('bot-description').value;
-  const blueprint = document.getElementById('bot-blueprint').files[0];
-  if (!description && !blueprint) {
-    showToast('Invalid Bot Configuration: Description or blueprint required');
-    return;
-  }
   try {
-    let code = 'return async () => "Bot initialized";';
-    if (blueprint) {
-      const text = await blueprint.text();
-      code = JSON.parse(text).code || code;
-    }
-    const bot = {
-      id: Date.now().toString(),
-      name: description.split(' ')[0] || 'NewBot',
-      purpose: description,
-      code,
-      creator: localStorage.getItem('currentUser'),
-      createdAt: Date.now()
-    };
-    const dna = generateBehavioralDNA(bot.purpose, bot.code);
-    await IDB.batchSet('bots', [bot]);
-    await IDB.batchSet('behavioral_dna', [dna]);
-    firebase.database().ref('bots/' + bot.id).set(bot);
-    firebase.database().ref('behavioral_dna/' + dna.botId).set(dna);
-    await setupCollaborativeMode(bot);
-    showToast(`Bot ${bot.name} created!`);
-    logActivity(`Created bot: ${bot.name}`);
-    loadBotsPage();
-  } catch (error) {
-    showToast(`Invalid Bot Configuration: ${error.message}`);
-  }
-}
+    const botList = document.getElementById('bot-list');
+    botList.innerHTML = '';
+    const bots = await IDB.getAll('bots');
+    const user = localStorage.getItem('currentUser');
+    bots.filter(b => b.creator === user || b.collaborators?.includes(user)).forEach(bot => {
+      const div = document.createElement('div');
+      div.className = 'bot-item';
+      div.innerHTML = `<p>${bot.name}</p><button onclick="editBot('${bot.id}')">Edit</button><button onclick="runBot('${bot.id}')">Run</button><button onclick="deleteBot('${bot.id}')">Delete</button>`;
+      botList.appendChild(div);
+    });
 
-async function handleFileUpload(e) {
-  const files = e.target.files;
-  for (const file of files) {
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
+    document.getElementById('create-bot').addEventListener('click', async () => {
+      const name = document.getElementById('bot-name').value;
+      const purpose = document.getElementById('bot-purpose').value;
+      const template = document.getElementById('bot-template').value;
+      if (!name || !purpose) {
+        showToast('Invalid Bot Configuration: Name and purpose required');
+        return;
+      }
       const bot = {
         id: Date.now().toString(),
-        name: data.name || 'ImportedBot',
-        purpose: data.purpose || 'General',
-        code: data.code || 'return async () => "Bot initialized";',
-        creator: localStorage.getItem('currentUser'),
-        createdAt: Date.now()
+        name,
+        purpose,
+        code: template || 'return async () => "Bot initialized";',
+        creator: user,
+        createdAt: Date.now(),
+        collaborators: []
       };
       const dna = generateBehavioralDNA(bot.purpose, bot.code);
       await IDB.batchSet('bots', [bot]);
       await IDB.batchSet('behavioral_dna', [dna]);
-      firebase.database().ref('bots/' + bot.id).set(bot);
-      firebase.database().ref('behavioral_dna/' + dna.botId).set(dna);
+      await set(ref(database, 'bots/' + bot.id), bot);
+      await set(ref(database, 'behavioral_dna/' + dna.botId), dna);
       await setupCollaborativeMode(bot);
-      showToast(`Bot ${bot.name} imported!`);
-      logActivity(`Imported bot: ${bot.name}`);
-    } catch (error) {
-      showToast(`Invalid Bot Configuration: ${error.message}`);
-    }
+      showToast(`Bot ${name} created!`);
+      logActivity(`Created bot: ${name}`);
+      loadBotsPage();
+    });
+
+    document.getElementById('upload-blueprint').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      const text = await file.text();
+      try {
+        const blueprint = JSON.parse(text);
+        const bot = {
+          id: Date.now().toString(),
+          name: blueprint.name,
+          purpose: blueprint.purpose,
+          code: blueprint.code,
+          creator: user,
+          createdAt: Date.now(),
+          collaborators: []
+        };
+        const dna = generateBehavioralDNA(bot.purpose, bot.code);
+        await IDB.batchSet('bots', [bot]);
+        await IDB.batchSet('behavioral_dna', [dna]);
+        await set(ref(database, 'bots/' + bot.id), bot);
+        await set(ref(database, 'behavioral_dna/' + dna.botId), dna);
+        showToast(`Blueprint ${bot.name} uploaded!`);
+        logActivity(`Uploaded bot blueprint: ${bot.name}`);
+        loadBotsPage();
+      } catch (error) {
+        showToast(`Invalid blueprint format: ${error.message}`);
+      }
+    });
+
+    loadBotTemplates();
+    loadMarketplace();
+    speak('Welcome to the Bots page! Create and manage your bots.');
+  } catch (error) {
+    showToast(`Failed to load Bots page: ${error.message}`);
+    console.error('Bots Error:', error);
   }
-  loadBotsPage();
 }
 
-async function createBotFromText() {
-  const idea = document.getElementById('text-input').value;
-  if (!idea) {
-    showToast('Invalid Bot Configuration: Idea required');
-    return;
-  }
-  const bot = {
-    id: Date.now().toString(),
-    name: idea.split(' ')[0] || 'TextBot',
-    purpose: idea,
-    code: 'return async () => "Bot initialized";',
-    creator: localStorage.getItem('currentUser'),
-    createdAt: Date.now()
-  };
-  const dna = generateBehavioralDNA(bot.purpose, bot.code);
-  await IDB.batchSet('bots', [bot]);
-  await IDB.batchSet('behavioral_dna', [dna]);
-  firebase.database().ref('bots/' + bot.id).set(bot);
-  firebase.database().ref('behavioral_dna/' + dna.botId).set(dna);
-  await setupCollaborativeMode(bot);
-  showToast(`Bot ${bot.name} created from text!`);
-  logActivity(`Created bot from text: ${bot.name}`);
-  loadBotsPage();
-}
-
-async function editBot(id) {
-  const bot = await IDB.get('bots', id);
-  localStorage.setItem('editingBot', JSON.stringify(bot));
-  document.getElementById('bots-modal').classList.add('hidden');
-  document.getElementById('editor-modal').classList.remove('hidden');
-  loadEditor();
-}
-
-async function runBot(id) {
-  const bot = await IDB.get('bots', id);
-  const dna = await IDB.get('behavioral_dna', id);
-  if (!dna) {
-    showToast('Invalid Bot Configuration: No Behavioral DNA found');
-    return;
-  }
-  const validation = await validateBotBehavior(bot, dna);
-  if (!validation.valid) {
-    showToast(`Rogue Behavior Detected: ${validation.issues.join(', ')}`);
-    return;
-  }
+export async function createBotFromText() {
   try {
+    const idea = document.getElementById('text-input').value;
+    if (!idea) {
+      showToast('Enter a bot idea');
+      return;
+    }
+    const user = localStorage.getItem('currentUser');
+    const bot = {
+      id: Date.now().toString(),
+      name: `Bot-${Date.now()}`,
+      purpose: idea,
+      code: 'return async () => "Bot initialized";',
+      creator: user,
+      createdAt: Date.now(),
+      collaborators: []
+    };
+    const dna = generateBehavioralDNA(bot.purpose, bot.code);
+    await IDB.batchSet('bots', [bot]);
+    await IDB.batchSet('behavioral_dna', [dna]);
+    await set(ref(database, 'bots/' + bot.id), bot);
+    await set(ref(database, 'behavioral_dna/' + dna.botId), dna);
+    await setupCollaborativeMode(bot);
+    showToast(`Bot created from idea: ${idea}`);
+    logActivity(`Created bot from text: ${idea}`);
+    loadBotsPage();
+  } catch (error) {
+    showToast(`Failed to create bot: ${error.message}`);
+  }
+}
+
+export async function editBot(botId) {
+  try {
+    const bot = await IDB.get('bots', botId);
+    localStorage.setItem('editingBot', JSON.stringify(bot));
+    document.getElementById('bots-modal').classList.add('hidden');
+    document.getElementById('editor-modal').classList.remove('hidden');
+    logActivity(`Editing bot: ${bot.name}`);
+  } catch (error) {
+    showToast(`Failed to edit bot: ${error.message}`);
+  }
+}
+
+export async function runBot(botId) {
+  try {
+    const bot = await IDB.get('bots', botId);
+    const dna = await IDB.get('behavioral_dna', botId);
+    const validation = await validateBotBehavior(bot, dna);
+    if (!validation.valid) {
+      showToast(`Rogue Behavior Detected: ${validation.issues.join(', ')}`);
+      return;
+    }
     const func = new Function('return ' + bot.code)();
     const result = await func();
     showToast(`Bot ${bot.name} executed: ${result}`);
+    bot.runtime = Math.random() * 1000;
+    bot.lastRun = Date.now();
+    await IDB.batchSet('bots', [bot]);
+    await update(ref(database, 'bots/' + botId), { runtime: bot.runtime, lastRun: bot.lastRun });
     logActivity(`Ran bot: ${bot.name}`);
   } catch (error) {
-    showToast(`Bot Execution Failed: ${error.message}`);
+    showToast(`Bot execution failed: ${error.message}`);
   }
 }
 
-async function deleteBot(id) {
-  await IDB.batchSet('bots', [{ id, _delete: true }]);
-  await IDB.batchSet('behavioral_dna', [{ botId: id, _delete: true }]);
-  firebase.database().ref('bots/' + id).remove();
-  firebase.database().ref('behavioral_dna/' + id).remove();
-  showToast('Bot deleted!');
-  logActivity(`Deleted bot: ${id}`);
-  loadBotsPage();
+export async function deleteBot(botId) {
+  try {
+    await IDB.batchSet('bots', [{ id: botId, _delete: true }]);
+    await IDB.batchSet('behavioral_dna', [{ botId, _delete: true }]);
+    await remove(ref(database, 'bots/' + botId));
+    await remove(ref(database, 'behavioral_dna/' + botId));
+    showToast('Bot deleted');
+    logActivity(`Deleted bot: ${botId}`);
+    loadBotsPage();
+  } catch (error) {
+    showToast(`Failed to delete bot: ${error.message}`);
+  }
 }
 
-async function fuseBots() {
-  const bots = await IDB.getAll('bots');
-  if (bots.length < 2) {
-    showToast('Invalid Bot Configuration: At least two bots required for fusion');
-    return;
-  }
-  const bot1 = bots[0];
-  const bot2 = bots[1];
-  const fusedBot = {
-    id: Date.now().toString(),
-    name: `Fused_${bot1.name}_${bot2.name}`,
-    purpose: `${bot1.purpose} & ${bot2.purpose}`,
-    code: `return async () => { ${bot1.code}; ${bot2.code}; return "Fused bot executed"; }`,
-    creator: localStorage.getItem('currentUser'),
-    createdAt: Date.now()
-  };
-  const dna = generateBehavioralDNA(fusedBot.purpose, fusedBot.code);
-  await IDB.batchSet('bots', [fusedBot]);
-  await IDB.batchSet('behavioral_dna', [dna]);
-  firebase.database().ref('bots/' + fusedBot.id).set(fusedBot);
-  firebase.database().ref('behavioral_dna/' + dna.botId).set(dna);
-  showToast(`Fused bot ${fusedBot.name} created!`);
-  logActivity(`Fused bots: ${bot1.name} & ${bot2.name}`);
-  loadBotsPage();
+async function loadBotTemplates() {
+  const templateSelect = document.getElementById('bot-template');
+  templateSelect.innerHTML = '<option value="">Select Template</option>';
+  const templates = [
+    { name: 'Basic Bot', code: 'return async () => "Hello from bot!";' },
+    { name: 'API Bot', code: 'return async () => { const res = await fetch("https://api.example.com"); return res.json(); };' },
+    { name: 'Chat Bot', code: 'return async (input) => `You said: ${input}`;' }
+  ];
+  templates.forEach(t => {
+    const option = document.createElement('option');
+    option.value = t.code;
+    option.textContent = t.name;
+    templateSelect.appendChild(option);
+  });
 }
 
 async function loadMarketplace() {
-  const marketplace = document.getElementById('marketplace');
   const featured = document.getElementById('featured-bots');
-  marketplace.innerHTML = '';
   featured.innerHTML = '';
+  const marketplace = document.getElementById('marketplace');
+  marketplace.innerHTML = '';
   const bots = await IDB.getAll('bots');
+  bots.slice(0, 3).forEach(bot => {
+    const div = document.createElement('div');
+    div.className = 'featured-bot';
+    div.innerHTML = `<p>${bot.name}: ${bot.purpose}</p>`;
+    featured.appendChild(div);
+  });
   bots.forEach(bot => {
     const div = document.createElement('div');
-    div.className = bot.featured ? 'featured-bot' : 'bot-item';
+    div.className = 'bot-item';
     div.innerHTML = `<p>${bot.name} by ${bot.creator}</p>`;
-    if (bot.featured) featured.appendChild(div);
-    else marketplace.appendChild(div);
+    marketplace.appendChild(div);
   });
 }
