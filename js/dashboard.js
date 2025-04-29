@@ -1,81 +1,124 @@
-import { IDB, showToast, speak, closeAllModals, logActivity } from './utils.js';
+import { showToast, speak, logActivity } from './utils.js';
 import { loadBotsPage } from './bots.js';
+import { loadInspirationLab } from './inspiration.js';
+import { loadAIWorkshop } from './workshop.js';
+import { loadEditor } from './editor.js';
+import { loadPlayground } from './playground.js';
+import { loadCreatorsHub } from './creators.js';
+import { loadCollabHub } from './collab.js';
+import { loadVoiceCommand } from './voice.js';
+import { loadAnalytics } from './analytics.js';
+import { loadAccount } from './account.js';
+import { loadManual } from './manual.js';
+import { loadBossView } from './boss.js';
+import { setupARControlMode } from './arControl.js';
+import { runPredictiveTasks } from './predictiveTasks.js';
+import { loadNotifications } from './notifications.js';
 
 export async function loadDashboard() {
-  const bots = await IDB.getAll('bots');
-  document.getElementById('bot-status').textContent = `${bots.length} active`;
   try {
-    const res = await fetch('https://api.openweathermap.org/data/2.5/weather?q=London&appid=4fc179285e1139b621267e810bb9ddcd');
-    const data = await res.json();
-    const weather = `${data.weather[0].description}, ${Math.round(data.main.temp - 273.15)}°C`;
-    document.getElementById('weather').textContent = weather;
-  } catch {
-    document.getElementById('weather').textContent = 'Weather unavailable';
-  }
-  document.getElementById('ai-insights').textContent = 'Optimize bot runtime with Behavioral DNA validation.';
-  const challengeList = document.getElementById('challenge-list');
-  challengeList.innerHTML = '';
-  dailyChallenges.forEach(ch => {
-    const div = document.createElement('div');
-    div.textContent = `${ch.description} - ${ch.reward} XP`;
-    challengeList.appendChild(div);
-  });
-
-  document.querySelectorAll('.dashboard-widget').forEach(widget => {
-    widget.addEventListener('click', () => {
-      const action = widget.dataset.action;
-      closeAllModals();
-      if (action === 'view-bots' || action === 'create-bot') {
-        document.getElementById('bots-modal').classList.remove('hidden');
-        loadBotsPage();
-      } else if (action === 'view-insights') {
-        showToast('Insights: Validate bots daily to prevent rogue behavior');
-      }
-      logActivity(`Clicked dashboard widget: ${action}`);
-    });
-  });
-
-  const user = await IDB.get('users', localStorage.getItem('currentUser'));
-  if (!user.hasTakenTour) {
-    document.getElementById('dashboard-tour').classList.remove('hidden');
-    document.getElementById('next-tour-step').addEventListener('click', async () => {
-      document.getElementById('dashboard-tour').classList.add('hidden');
-      user.hasTakenTour = true;
-      await IDB.batchSet('users', [user]);
-      firebase.database().ref('users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')).update({ hasTakenTour: true });
-      showToast('Tour completed!');
-    });
-  }
-}
-
-export function showWelcome() {
-  const welcomeModal = document.getElementById('welcome-modal');
-  welcomeModal.classList.remove('hidden');
-  const updatesDiv = document.getElementById('welcome-updates');
-  updatesDiv.innerHTML = '';
-  updates.forEach(update => {
-    const p = document.createElement('p');
-    p.innerHTML = `<b>${update.type.charAt(0).toUpperCase() + update.type.slice(1)}:</b> ${update.message} (${new Date(update.timestamp).toLocaleDateString()})`;
-    updatesDiv.appendChild(p);
-  });
-  document.getElementById('dismiss-welcome').addEventListener('click', () => {
-    welcomeModal.classList.add('hidden');
     document.getElementById('dashboard-modal').classList.remove('hidden');
-    loadDashboard();
-  });
-  speak('Welcome to Smart Hub Ultra! Check out the recent updates.');
+    const user = localStorage.getItem('currentUser');
+    document.getElementById('welcome-message').textContent = `Welcome, ${user.split('@')[0]}!`;
+    
+    const weather = await fetchWeather();
+    document.getElementById('weather').innerHTML = `<p>${weather.city}: ${weather.temp}°C, ${weather.condition}</p>`;
+    
+    const insights = await fetchAIInsights();
+    document.getElementById('ai-insights').innerHTML = insights.map(i => `<p>${i}</p>`).join('');
+    
+    const challenges = await fetchDailyChallenges();
+    document.getElementById('daily-challenges').innerHTML = challenges.map(c => `<p>${c}</p>`).join('');
+
+    document.getElementById('bots-btn').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').classList.add('hidden');
+      loadBotsPage();
+    });
+
+    document.getElementById('inspiration-btn').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').classList.add('hidden');
+      loadInspirationLab();
+    });
+
+    document.getElementById('workshop-btn').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').classList.add('hidden');
+      loadAIWorkshop();
+    });
+
+    document.getElementById('editor-btn').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').classList.add('hidden');
+      loadEditor();
+    });
+
+    document.getElementById('playground-btn').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').classList.add('hidden');
+      loadPlayground();
+    });
+
+    document.getElementById('creators-btn').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').classList.add('hidden');
+      loadCreatorsHub();
+    });
+
+    document.getElementById('collab-btn').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').classList.add('hidden');
+      loadCollabHub();
+    });
+
+    document.getElementById('voice-btn').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').classList.add('hidden');
+      loadVoiceCommand();
+    });
+
+    document.getElementById('analytics-btn').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').classList.add('hidden');
+      loadAnalytics();
+    });
+
+    document.getElementById('account-btn').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').classList.add('hidden');
+      loadAccount();
+    });
+
+    document.getElementById('manual-btn').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').classList.add('hidden');
+      loadManual();
+    });
+
+    document.getElementById('boss-btn').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').classList.add('hidden');
+      loadBossView();
+    });
+
+    document.getElementById('ar-btn').addEventListener('click', () => {
+      document.getElementById('dashboard-modal').classList.add('hidden');
+      setupARControlMode();
+    });
+
+    document.getElementById('predictive-btn').addEventListener('click', () => {
+      runPredictiveTasks();
+    });
+
+    await loadNotifications();
+    speak('Dashboard loaded! Explore your bots and insights.');
+    logActivity('Loaded dashboard');
+  } catch (error) {
+    showToast(`Failed to load Dashboard: ${error.message}`);
+    console.error('Dashboard Error:', error);
+  }
 }
 
-const updates = [
-  { message: "Behavioral DNA Mapping for bot oversight", type: "feature", timestamp: Date.now() },
-  { message: "Holographic Assistant for guided setup", type: "feature", timestamp: Date.now() },
-  { message: "AR Control Mode for immersive bot management", type: "feature", timestamp: Date.now() },
-  { message: "Predictive Task Automation for bot maintenance", type: "feature", timestamp: Date.now() },
-  { message: "Collaborative Multi-User Mode for shared bot control", type: "feature", timestamp: Date.now() }
-];
+async function fetchWeather() {
+  // Simulate weather API
+  return { city: 'New York', temp: 20, condition: 'Sunny' };
+}
 
-const dailyChallenges = [
-  { id: "1", description: "Create a bot with Behavioral DNA Mapping", reward: 50 },
-  { id: "2", description: "Collaborate with another user", reward: 75 },
-  { id: "3", description: "Test a bot in the Playground", reward: 30 }
-];
+async function fetchAIInsights() {
+  // Simulate AI insights
+  return ['Optimize your bots for faster runtime.', 'Try the new bot templates!'];
+}
+
+async function fetchDailyChallenges() {
+  // Simulate daily challenges
+  return ['Create a bot that fetches memes.', 'Collaborate on a bot with a friend.'];
+}
