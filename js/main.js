@@ -1,7 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAnalytics, logEvent } from 'firebase/analytics';
-import { loadAuth } from './auth.js';
-import { showToast, closeAllModals } from './utils.js';
+import { showToast } from './utils.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAPPllpKiFOcjqxnuk2tRvithFYKSzkQAc",
@@ -36,36 +35,6 @@ async function init() {
     } else {
       showToast('Service Worker not supported');
     }
-
-    // Handle authentication state
-    import('firebase/auth').then(({ getAuth, onAuthStateChanged }) => {
-      const auth = getAuth(app);
-      onAuthStateChanged(auth, user => {
-        if (user) {
-          localStorage.setItem('currentUser', user.email);
-          closeAllModals();
-          loadAuth();
-        } else {
-          localStorage.removeItem('currentUser');
-          loadAuth();
-        }
-      });
-    });
-
-    // Modal navigation
-    document.querySelectorAll('.modal-nav').forEach(nav => {
-      nav.addEventListener('click', () => {
-        closeAllModals();
-        document.getElementById(nav.dataset.modal).classList.remove('hidden');
-      });
-    });
-
-    document.querySelectorAll('.close-modal').forEach(btn => {
-      btn.addEventListener('click', () => {
-        closeAllModals();
-        document.getElementById('auth-modal').classList.remove('hidden');
-      });
-    });
 
     // Add touch support for mobile
     if ('ontouchstart' in window) {
