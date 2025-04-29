@@ -104,6 +104,9 @@
     .ar-control { position: absolute; padding: 10px; background: #33B5FF; border-radius: 5px; cursor: pointer; }
     .dna-status { color: #00FFAA; }
     .dna-warning { color: #FF3333; }
+    .template-selector { margin: 10px 0; }
+    .template-option { padding: 10px; margin: 5px; background: rgba(255, 255, 255, 0.1); border-radius: 5px; cursor: pointer; }
+    .template-option:hover { background: rgba(255, 255, 255, 0.2); }
   </style>
 </head>
 <body>
@@ -148,21 +151,21 @@
   <!-- Sidebar -->
   <div id="sidebar" class="sidebar hidden">
     <h2>Smart Hub Ultra</h2>
-    <a href="#" data-modal="dashboard-modal">Dashboard</a>
-    <a href="#" data-modal="bots-modal">Bots</a>
-    <a href="#" data-modal="inspiration-modal">Inspiration Lab</a>
-    <a href="#" data-modal="builder-modal">Bot Builder</a>
-    <a href="#" data-modal="workshop-modal">AI Workshop</a>
-    <a href="#" data-modal="editor-modal">Editor</a>
-    <a href="#" data-modal="playground-modal">Playground</a>
-    <a href="#" data-modal="creators-modal">Creator’s Hub</a>
-    <a href="#" data-modal="collab-modal">Collab Hub</a>
-    <a href="#" data-modal="voice-modal">Voice Command</a>
-    <a href="#" data-modal="analytics-modal">Analytics</a>
-    <a href="#" data-modal="account-modal">Account</a>
-    <a href="#" data-modal="manual-modal">Manual</a>
-    <a href="#" id="boss-link" class="hidden" data-modal="boss-modal">Boss View</a>
-    <a href="#" id="logout-btn">Logout</a>
+    <a href="#" data-modal="dashboard-modal" data-tooltip="View your dashboard">Dashboard</a>
+    <a href="#" data-modal="bots-modal" data-tooltip="Create and manage bots">Bots</a>
+    <a href="#" data-modal="inspiration-modal" data-tooltip="Get bot ideas">Inspiration Lab</a>
+    <a href="#" data-modal="builder-modal" data-tooltip="Build bots visually">Bot Builder</a>
+    <a href="#" data-modal="workshop-modal" data-tooltip="AI code debugging">AI Workshop</a>
+    <a href="#" data-modal="editor-modal" data-tooltip="Edit bot code">Editor</a>
+    <a href="#" data-modal="playground-modal" data-tooltip="Test your bots">Playground</a>
+    <a href="#" data-modal="creators-modal" data-tooltip="Showcase your bots">Creator’s Hub</a>
+    <a href="#" data-modal="collab-modal" data-tooltip="Collaborate with others">Collab Hub</a>
+    <a href="#" data-modal="voice-modal" data-tooltip="Use voice commands">Voice Command</a>
+    <a href="#" data-modal="analytics-modal" data-tooltip="View bot analytics">Analytics</a>
+    <a href="#" data-modal="account-modal" data-tooltip="Manage your account">Account</a>
+    <a href="#" data-modal="manual-modal" data-tooltip="Read the user manual">Manual</a>
+    <a href="#" id="boss-link" class="hidden" data-modal="boss-modal" data-tooltip="Admin controls">Boss View</a>
+    <a href="#" id="logout-btn" data-tooltip="Log out of your account">Logout</a>
   </div>
 
   <!-- Notification Bell -->
@@ -180,14 +183,14 @@
   <div id="login-modal" class="modal">
     <div class="modal-content glassmorphic login-gradient">
       <h2>Smart Hub Access</h2>
-      <input type="text" id="username" placeholder="Username (optional)">
-      <input type="email" id="email" placeholder="Email (optional)">
-      <input type="password" id="password" placeholder="Password (min 8 chars)" required>
-      <input type="text" id="six-digit" placeholder="6-Digit Code" maxlength="6" required>
-      <input type="text" id="four-digit" placeholder="4-Digit Code" maxlength="4" required>
-      <button id="sign-in-btn" class="btn red-glow">Sign In</button>
-      <button id="sign-up-btn" class="btn blue-glow">Sign Up</button>
-      <button id="forgot-password" class="btn purple-glow">Forgot Password?</button>
+      <input type="text" id="username" placeholder="Username (optional)" data-tooltip="Enter your username">
+      <input type="email" id="email" placeholder="Email (optional)" data-tooltip="Enter your email">
+      <input type="password" id="password" placeholder="Password (min 8 chars)" required data-tooltip="Enter your password">
+      <input type="text" id="six-digit" placeholder="6-Digit Code" maxlength="6" required data-tooltip="Enter 6-digit code">
+      <input type="text" id="four-digit" placeholder="4-Digit Code" maxlength="4" required data-tooltip="Enter 4-digit code">
+      <button id="sign-in-btn" class="btn red-glow" data-tooltip="Sign in to your account">Sign In</button>
+      <button id="sign-up-btn" class="btn blue-glow" data-tooltip="Create a new account">Sign Up</button>
+      <button id="forgot-password" class="btn purple-glow" data-tooltip="Recover your password">Forgot Password?</button>
       <p id="auth-error" class="error hidden"></p>
       <div id="login-spinner" class="hidden">Processing...</div>
     </div>
@@ -197,11 +200,12 @@
   <div id="recovery-modal" class="modal hidden">
     <div class="modal-content glassmorphic recovery-gradient">
       <h2>Password Recovery</h2>
-      <input type="text" id="recovery-six-digit" placeholder="6-Digit Code">
-      <input type="text" id="recovery-four-digit" placeholder="4-Digit Code">
-      <button id="recover-btn" class="btn blue-glow">Recover</button>
-      <button id="contact-support" class="btn purple-glow">Contact Support</button>
+      <input type="text" id="recovery-six-digit" placeholder="6-Digit Code" data-tooltip="Enter 6-digit recovery code">
+      <input type="text" id="recovery-four-digit" placeholder="4-Digit Code" data-tooltip="Enter 4-digit recovery code">
+      <button id="recover-btn" class="btn blue-glow" data-tooltip="Recover your password">Recover</button>
+      <button id="contact-support" class="btn purple-glow" data-tooltip="Contact support team">Contact Support</button>
       <p id="recovery-error" class="error hidden"></p>
+      <button class="close-modal btn purple-glow" data-tooltip="Close this modal">Close</button>
     </div>
   </div>
 
@@ -209,12 +213,13 @@
   <div id="support-modal" class="modal hidden">
     <div class="modal-content glassmorphic support-gradient">
       <h2>Contact Support</h2>
-      <input type="text" id="support-username" placeholder="Username">
-      <input type="text" id="support-name" placeholder="Name">
-      <input type="email" id="support-email" placeholder="Email">
-      <input type="text" id="support-number" placeholder="Phone Number">
-      <textarea id="support-message" placeholder="Describe your issue..."></textarea>
-      <button id="submit-support" class="btn blue-glow">Submit</button>
+      <input type="text" id="support-username" placeholder="Username" data-tooltip="Enter your username">
+      <input type="text" id="support-name" placeholder="Name" data-tooltip="Enter your full name">
+      <input type="email" id="support-email" placeholder="Email" data-tooltip="Enter your email">
+      <input type="text" id="support-number" placeholder="Phone Number" data-tooltip="Enter your phone number">
+      <textarea id="support-message" placeholder="Describe your issue..." data-tooltip="Describe your issue"></textarea>
+      <button id="submit-support" class="btn blue-glow" data-tooltip="Submit support ticket">Submit</button>
+      <button class="close-modal btn purple-glow" data-tooltip="Close this modal">Close</button>
     </div>
   </div>
 
@@ -225,7 +230,7 @@
       <p>The ultimate AI bot creation and oversight platform.</p>
       <h3>Recent Updates</h3>
       <div id="welcome-updates"></div>
-      <button id="dismiss-welcome" class="btn blue-glow">Got It</button>
+      <button id="dismiss-welcome" class="btn blue-glow" data-tooltip="Proceed to dashboard">Got It</button>
     </div>
   </div>
 
