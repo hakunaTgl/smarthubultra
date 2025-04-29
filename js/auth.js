@@ -1,164 +1,132 @@
-import { showToast, speak } from './utils.js';
-import { IDB } from './utils.js';
-import { showWelcome } from './dashboard.js';
+import { showToast, speak, logActivity, closeAllModals } from './utils.js';
+import { loadDashboard } from './dashboard.js';
+import { startHoloGuide } from './holoGuide.js';
+import { initializeApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { getDatabase, ref, set, get } from 'firebase/database';
 
-export function initializeAuth(onSuccess) {
-  document.getElementById('sign-up-btn').addEventListener('click', async () => {
-    const email = document.getElementById('email').value;
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const sixDigit = document.getElementById('six-digit').value;
-    const fourDigit = document.getElementById('four-digit').value;
-    await signUp(email, username, password, sixDigit, fourDigit, onSuccess);
-  });
+const firebaseConfig = {
+  apiKey: "AIzaSyAPPllpKiFOcjqxnuk2tRvithFYKSzkQAc",
+  authDomain: "smarthubultra.firebaseapp.com",
+  databaseURL: "https://smarthubultra-default-rtdb.firebaseio.com",
+  projectId: "smarthubultra",
+  storageBucket: "smarthubultra.firebasestorage.app",
+  messagingSenderId: "12039705608",
+  appId: "1:12039705608:web:f1a4383b245275eaa26dbd",
+  measurementId: "G-V24P3DHL9M"
+};
 
-  document.getElementById('sign-in-btn').addEventListener('click', async () => {
-    const loginId = document.getElementById('email').value || document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const sixDigit = document.getElementById('six-digit').value;
-    const fourDigit = document.getElementById('four-digit').value;
-    await signIn(loginId, password, sixDigit, fourDigit, onSuccess);
-  });
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const database = getDatabase(app);
 
-  document.getElementById('forgot-password').addEventListener('click', () => {
-    closeAllModals();
-    document.getElementById('recovery-modal').classList.remove('hidden');
-  });
-
-  document.getElementById('recover-btn').addEventListener('click', recoverPassword);
-  document.getElementById('contact-support').addEventListener('click', () => {
-    closeAllModals();
-    document.getElementById('support-modal').classList.remove('hidden');
-  });
-  document.getElementById('submit-support').addEventListener('click', submitSupportTicket);
-}
-
-async function signUp(email, username, password, sixDigit, fourDigit, onSuccess) {
+export async function loadAuth() {
   try {
-    document.getElementById('login-spinner').classList.remove('hidden');
-    if (!email && !username) throw new Error('Invalid Credentials: Email or username required');
-    if (password.length < 8) throw new Error('Invalid Password: Must be at least 8 characters');
-    if (!/^\d{6}$/.test(sixDigit)) throw new Error('Invalid Code: 6-digit code must be exactly 6 digits');
-    if (!/^\d{4}$/.test(fourDigit)) throw new Error('Invalid Code: 4-digit code must be exactly 4 digits');
-    const userByEmail = email ? await IDB.get('users', email) : null;
-    const userByUsername = username ? await IDB.get('users', username) : null;
-    if (userByEmail || userByUsername) throw new Error('Account Exists: Email or username already registered');
-    const user = {
-      email: email || username,
-      username,
-      password,
-      sixDigit,
-      fourDigit,
-      createdAt: Date.now(),
-      points: 0,
-      level: 1,
-      xp: 0,
-      role: 'user',
-      badges: [],
-      passwordChanges: [],
-      modalLayouts: {},
-      collabUsers: []
-    };
-    await IDB.batchSet('users', [user]);
-    localStorage.setItem('currentUser', email || username);
-    firebase.database().ref('users/' + (email || username).replace(/[^a-zA-Z0-9]/g, '')).set(user);
-    showToast('Signed up successfully!');
-    document.getElementById('login-modal').classList.add('hidden');
-    showWelcome();
-    onSuccess();
+    document.getElementById('auth-modal').classList.remove('hidden');
+
+    document.getElementById('sign-up-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = document.getElementById('sign-up-email').value;
+      const password = document.getElementById('sign-up-password').value;
+      const username = document.getElementById('sign-up-username').value;
+      if (password.length < 8) {
+        showToast('Invalid Password: Must be at least 8 characters');
+        return;
+      }
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = {
+          email,
+          username,
+          password,
+          sixDigit: document.getElementById('sign-up-six-digit').value,
+          fourDigit: document.getElementById('sign-up-four-digit').value,
+          role: 'user',
+          points: 0,
+          level: 1,
+          xp: 0,
+          badges: [],
+          passwordChanges: []
+        };
+        await set(ref(database, 'users/' + email.replace(/[^a-zA-Z0-9]/g, '')), user);
+        localStorage.setItem('currentUser', email);
+        showToast('Sign-up successful! Welcome to Smart Hub Ultra.');
+        logActivity('User signed up');
+        closeAllModals();
+        await startHoloGuide();
+        await loadDashboard();
+      } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+          showToast('Email already in use');
+        } else if (error.code === 'auth/invalid-email') {
+          showToast('Invalid Email Format');
+        } else {
+          showToast(`Sign-up failed: ${error.message}`);
+        }
+      }
+    });
+
+    document.getElementById('sign-in-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = document.getElementById('sign-in-email').value;
+      const password = document.getElementById('sign-in-password').value;
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        localStorage.setItem('currentUser', email);
+        const userSnap = await get(ref(database, 'users/' + email.replace(/[^a-zA-Z0-9]/g, '')));
+        if (!userSnap.exists()) {
+          showToast('Not Set Up Yet: Complete user profile');
+          return;
+        }
+        showToast('Sign-in successful!');
+        logActivity('User signed in');
+        closeAllModals();
+        await loadDashboard();
+      } catch (error) {
+        if (error.code === 'auth/wrong-password') {
+          showToast('Invalid Password');
+        } else if (error.code === 'auth/user-not-found') {
+          showToast('User Not Found');
+        } else {
+          showToast(`Sign-in failed: ${error.message}`);
+        }
+      }
+    });
+
+    document.getElementById('forgot-password').addEventListener('click', async () => {
+      const email = document.getElementById('sign-in-email').value;
+      if (!email) {
+        showToast('Enter email to reset password');
+        return;
+      }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showToast('Password reset email sent');
+        logActivity('Requested password reset');
+      } catch (error) {
+        showToast(`Password reset failed: ${error.message}`);
+      }
+    });
+
+    document.getElementById('support-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = document.getElementById('support-email').value;
+      const message = document.getElementById('support-message').value;
+      const ticket = {
+        id: Date.now().toString(),
+        email,
+        message,
+        timestamp: Date.now()
+      };
+      await set(ref(database, 'support/' + ticket.id), ticket);
+      showToast('Support ticket submitted');
+      logActivity('Submitted support ticket');
+      e.target.reset();
+    });
+
+    speak('Welcome to Smart Hub Ultra! Sign up or sign in to start.');
   } catch (error) {
-    document.getElementById('auth-error').textContent = error.message;
-    document.getElementById('auth-error').classList.remove('hidden');
-    showToast(`Sign-up failed: ${error.message}`);
-  } finally {
-    document.getElementById('login-spinner').classList.add('hidden');
+    showToast(`Auth setup failed: ${error.message}`);
+    console.error('Auth Error:', error);
   }
-}
-
-async function signIn(loginId, password, sixDigit, fourDigit, onSuccess) {
-  try {
-    document.getElementById('login-spinner').classList.remove('hidden');
-    if (!loginId || !password) throw new Error('Invalid Credentials: Login ID and password required');
-    if (!/^\d{6}$/.test(sixDigit)) throw new Error('Invalid Code: 6-digit code must be exactly 6 digits');
-    if (!/^\d{4}$/.test(fourDigit)) throw new Error('Invalid Code: 4-digit code must be exactly 4 digits');
-    let user = await IDB.get('users', loginId);
-    if (!user) {
-      const users = await IDB.getAll('users');
-      user = users.find(u => u.username === loginId || u.email === loginId);
-    }
-    if (!user) throw new Error('Account Not Found: User not registered');
-    if (user.password !== password) throw new Error('Invalid Password: Incorrect password');
-    if (user.sixDigit !== sixDigit || user.fourDigit !== fourDigit) throw new Error('Invalid Codes: Codes do not match');
-    localStorage.setItem('currentUser', user.email);
-    showToast('Signed in successfully!');
-    document.getElementById('login-modal').classList.add('hidden');
-    if (user.email === 'boss@smarthub.com') {
-      document.getElementById('boss-link').classList.remove('hidden');
-    }
-    showWelcome();
-    onSuccess();
-  } catch (error) {
-    document.getElementById('auth-error').textContent = error.message;
-    document.getElementById('auth-error').classList.remove('hidden');
-    showToast(`Sign-in failed: ${error.message}`);
-  } finally {
-    document.getElementById('login-spinner').classList.add('hidden');
-  }
-}
-
-async function recoverPassword() {
-  const sixDigit = document.getElementById('recovery-six-digit').value;
-  const fourDigit = document.getElementById('recovery-four-digit').value;
-  const email = localStorage.getItem('currentUser');
-  const user = await IDB.get('users', email);
-  if (!user) {
-    document.getElementById('recovery-error').textContent = 'Account Not Found: User not registered';
-    document.getElementById('recovery-error').classList.remove('hidden');
-    return;
-  }
-  if (user.sixDigit === sixDigit && user.fourDigit === fourDigit) {
-    const newPassword = prompt('Enter new password (min 8 chars):');
-    if (newPassword.length < 8) {
-      document.getElementById('recovery-error').textContent = 'Invalid Password: Must be at least 8 characters';
-      document.getElementById('recovery-error').classList.remove('hidden');
-      return;
-    }
-    user.passwordChanges.push({ oldPassword: user.password, newPassword, timestamp: Date.now() });
-    user.password = newPassword;
-    await IDB.batchSet('users', [user]);
-    firebase.database().ref('users/' + email.replace(/[^a-zA-Z0-9]/g, '')).update(user);
-    showToast('Password updated!');
-    document.getElementById('recovery-modal').classList.add('hidden');
-  } else {
-    document.getElementById('recovery-error').textContent = 'Invalid Codes: Codes do not match';
-    document.getElementById('recovery-error').classList.remove('hidden');
-  }
-}
-
-async function submitSupportTicket() {
-  const ticket = {
-    id: Date.now().toString(),
-    username: document.getElementById('support-username').value,
-    name: document.getElementById('support-name').value,
-    email: document.getElementById('support-email').value,
-    number: document.getElementById('support-number').value,
-    message: document.getElementById('support-message').value,
-    timestamp: Date.now()
-  };
-  await IDB.batchSet('support', [ticket]);
-  firebase.database().ref('support/' + ticket.id).set(ticket);
-  showToast('Support ticket submitted!');
-  document.getElementById('support-modal').classList.add('hidden');
-  logActivity(`Submitted support ticket: ${ticket.message}`);
-}
-
-function logActivity(action) {
-  const log = {
-    id: Date.now().toString(),
-    user: localStorage.getItem('currentUser'),
-    action,
-    timestamp: Date.now()
-  };
-  IDB.batchSet('tracking', [log]);
-  firebase.database().ref('tracking/' + log.id).set(log);
 }
