@@ -141,6 +141,17 @@ Deploy to a hosting service like Firebase Hosting or Netlify:
 
 firebase deploy
 
+Command-Line Interface
+----------------------
+Use the CLI to create bot blueprints or run Node.js tasks.
+
+```
+npm run cli init-bot myBot
+npm run cli run-task ./scripts/sampleTask.js
+```
+
+This will create `bots/myBot.json` with a basic structure or execute the specified script.
+
 File Structure
 
 
