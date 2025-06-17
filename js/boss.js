@@ -20,6 +20,17 @@ export async function loadBossView() {
       botsDiv.appendChild(div);
     });
 
+    const roomsDiv = document.getElementById('boss-rooms');
+    if (roomsDiv) {
+      roomsDiv.innerHTML = '';
+      const rooms = await IDB.getAll('rooms');
+      rooms.forEach(room => {
+        const div = document.createElement('div');
+        div.innerHTML = `<p>${room.name}: ${room.members.join(', ')}</p>`;
+        roomsDiv.appendChild(div);
+      });
+    }
+
     const ticketsDiv = document.getElementById('boss-tickets');
     ticketsDiv.innerHTML = '';
     const tickets = await IDB.getAll('support');
@@ -58,7 +69,7 @@ export async function loadBossView() {
       logActivity(`Broadcasted announcement: ${message}`);
     });
 
-    speak('Welcome to the Boss View! Manage users, bots, and tickets.');
+    speak('Welcome to the Boss View! Manage users, bots, rooms, and tickets.');
   } catch (error) {
     showToast(`Failed to load Boss View: ${error.message}`);
     console.error('Boss View Error:', error);

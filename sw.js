@@ -25,6 +25,8 @@ const urlsToCache = [
   '/js/behavioralDNA.js',
   '/js/predictiveTasks.js',
   '/js/notifications.js',
+  '/js/rooms.js',
+  '/js/o7integration.js',
   '/js/utils.js',
   'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js',
   'https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js',
