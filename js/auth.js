@@ -1,5 +1,6 @@
 import { showToast, speak, logActivity, closeAllModals } from './utils.js';
 import { loadDashboard } from './dashboard.js';
+import { connectO7 } from './o7integration.js';
 import { startHoloGuide } from './holoGuide.js';
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
@@ -122,6 +123,11 @@ export async function loadAuth() {
       showToast('Support ticket submitted');
       logActivity('Submitted support ticket');
       e.target.reset();
+    });
+
+    document.getElementById('o7-connect').addEventListener('click', () => {
+      const key = document.getElementById('o7-key').value;
+      connectO7(key);
     });
 
     speak('Welcome to Smart Hub Ultra! Sign up or sign in to start.');

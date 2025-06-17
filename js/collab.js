@@ -1,4 +1,5 @@
 import { IDB, showToast, speak, logActivity } from './utils.js';
+import { loadRooms } from './rooms.js';
 
 export async function loadCollabHub() {
   try {
@@ -56,7 +57,8 @@ export async function loadCollabHub() {
     });
 
     document.getElementById('collab-chat').classList.remove('hidden');
-    speak('Welcome to the Collab Hub! Invite users and code together.');
+    await loadRooms();
+    speak('Welcome to the Collab Hub! Invite users, join rooms, and code together.');
   } catch (error) {
     showToast(`Failed to load Collab Hub: ${error.message}`);
     console.error('Collab Hub Error:', error);
