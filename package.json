@@ -1,0 +1,20 @@
+{
+  "name": "smarthubultra",
+  "version": "1.0.0",
+  "description": "Progressive Web App for creating and managing AI bots",
+  "type": "module",
+  "main": "js/main.js",
+  "scripts": {
+    "start": "parcel index.html --open",
+    "build": "parcel build index.html --dist-dir dist",
+    "cli": "node cli.js"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "firebase": "^9.22.0"
+  },
+  "devDependencies": {
+    "@parcel/transformer-webmanifest": "^2.15.2",
+    "parcel": "^2.9.3"
+  }
+}
