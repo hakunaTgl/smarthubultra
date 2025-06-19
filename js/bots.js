@@ -1,46 +1,107 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Hub Ultra - Bots</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="manifest" href="/manifest.json">
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-    import { getAnalytics } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js';
-    import { getAuth } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-    import { getDatabase } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
-    const firebaseConfig = {
-      apiKey: "AIzaSyAPPllpKiFOcjqxnuk2tRvithFYKSzkQAc",
-      authDomain: "smarthubultra.firebaseapp.com",
-      databaseURL: "https://smarthubultra-default-rtdb.firebaseio.com",
-      projectId: "smarthubultra",
-      storageBucket: "smarthubultra.firebasestorage.app",
-      messagingSenderId: "12039705608",
-      appId: "1:12039705608:web:f1a4383b245275eaa26dbd",
-      measurementId: "G-V24P3DHL9M"
-    };
-    const app = initializeApp(firebaseConfig);
-    getAnalytics(app);
-  </script>
-</head>
-<body>
-  <div id="bots-page" class="page">
-    <div class="page-content glassmorphic">
-      <h2>Bots</h2>
-      <input id="bot-name" placeholder="Bot Name">
-      <input id="bot-purpose" placeholder="Bot Purpose">
-      <select id="bot-template"></select>
-      <button id="create-bot">Create Bot</button>
-      <input type="file" id="upload-blueprint" accept=".json">
-      <div id="bot-list"></div>
-      <div id="featured-bots"></div>
-      <div id="marketplace"></div>
-      <a href="/dashboard" class="nav-link">Back to Dashboard</a>
-    </div>
-  </div>
-  <script src="/js/main.js" type="module"></script>
-  <script src="/js/bots.js" type="module"></script>
-</body>
-</html>
+import { IDB, showToast, logActivity } from './utils.js';
+
+export async function loadBotsPage() {
+  try {
+    await renderBotList();
+
+    document.getElementById('create-bot').addEventListener('click', createBot);
+    document.getElementById('upload-blueprint').addEventListener('change', uploadBlueprint);
+  } catch (error) {
+    showToast(`Failed to load Bots: ${error.message}`);
+    console.error('Bots Error:', error);
+  }
+}
+
+async function createBot() {
+  const name = document.getElementById('bot-name').value.trim();
+  const purpose = document.getElementById('bot-purpose').value.trim();
+  if (!name || !purpose) {
+    showToast('Name and Purpose required');
+    return;
+  }
+  const bot = {
+    id: Date.now().toString(),
+    name,
+    purpose,
+    code: `// ${purpose}`,
+    creator: localStorage.getItem('currentUser'),
+    createdAt: Date.now()
+  };
+  await IDB.batchSet('bots', [bot]);
+  firebase.database().ref('bots/' + bot.id).set(bot);
+  showToast(`Bot ${name} created`);
+  logActivity(`Created bot ${name}`);
+  await renderBotList();
+}
+
+async function uploadBlueprint(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  const blueprint = JSON.parse(text);
+  blueprint.id = Date.now().toString();
+  await IDB.batchSet('bots', [blueprint]);
+  firebase.database().ref('bots/' + blueprint.id).set(blueprint);
+  showToast('Blueprint uploaded');
+  logActivity('Uploaded bot blueprint');
+  await renderBotList();
+}
+
+async function renderBotList() {
+  const list = document.getElementById('bot-list');
+  list.innerHTML = '';
+  const bots = await IDB.getAll('bots');
+  bots.forEach(bot => {
+    const div = document.createElement('div');
+    div.className = 'bot-item glassmorphic';
+    div.innerHTML = `<span>${bot.name}</span>
+      <button data-id="${bot.id}" class="run-bot">Run</button>
+      <button data-id="${bot.id}" class="delete-bot">Delete</button>`;
+    list.appendChild(div);
+  });
+  list.querySelectorAll('.run-bot').forEach(btn => btn.addEventListener('click', () => runBot(btn.dataset.id)));
+  list.querySelectorAll('.delete-bot').forEach(btn => btn.addEventListener('click', () => deleteBot(btn.dataset.id)));
+}
+
+export async function createBotFromText() {
+  const idea = document.getElementById('text-input').value.trim();
+  if (!idea) {
+    showToast('Enter text to create bot');
+    return;
+  }
+  // The bot name is hardcoded as 'VoiceBot' to serve as a default name for bots created from text input.
+  const bot = {
+    id: Date.now().toString(),
+    name: 'VoiceBot',
+    purpose: idea,
+    code: `// Bot created from text: ${idea}`,
+    creator: localStorage.getItem('currentUser'),
+    createdAt: Date.now()
+  };
+  await IDB.batchSet('bots', [bot]);
+  firebase.database().ref('bots/' + bot.id).set(bot);
+  showToast('Bot created from text');
+  logActivity('Created bot from text');
+  await renderBotList();
+}
+
+export async function runBot(botId) {
+  const bot = await IDB.get('bots', botId);
+  if (!bot) {
+    showToast('Bot not found');
+    return;
+  }
+  bot.lastRun = Date.now();
+  await IDB.batchSet('bots', [bot]);
+  firebase.database().ref('bots/' + bot.id).update({ lastRun: bot.lastRun });
+  showToast(`Bot ${bot.name} executed`);
+  logActivity(`Ran bot ${bot.name}`);
+}
+
+export async function deleteBot(botId) {
+  await IDB.batchSet('bots', [{ id: botId, _delete: true }]);
+  firebase.database().ref('bots/' + botId).remove();
+  showToast('Bot deleted');
+  logActivity('Deleted bot');
+  await renderBotList();
+}

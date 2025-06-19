@@ -158,6 +158,7 @@ js/:
 
 
 main.js: Initializes Firebase, Service Worker, and app navigation.
+bots.html and dashboard.html provide pages for bot management and the dashboard.
 
 
 
