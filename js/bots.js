@@ -69,6 +69,7 @@ export async function createBotFromText() {
     showToast('Enter text to create bot');
     return;
   }
+  // The bot name is hardcoded as 'VoiceBot' to serve as a default name for bots created from text input.
   const bot = {
     id: Date.now().toString(),
     name: 'VoiceBot',
