@@ -1,6 +1,18 @@
 // Central Firebase configuration and helper exports using modular SDK
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, set, update, push, remove, onValue, get } from 'firebase/database';
+import {
+  getDatabase,
+  ref,
+  set,
+  update,
+  push,
+  remove,
+  onValue,
+  get,
+  onChildAdded,
+  onChildChanged,
+  onChildRemoved
+} from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
 
@@ -23,7 +35,7 @@ try { analytics = getAnalytics(app); } catch (e) { /* optional */ }
 
 export function database() { return db; }
 export function dbRef(path) { return ref(db, path); }
-export { set, update, push, remove, onValue, get };
+export { set, update, push, remove, onValue, onChildAdded, onChildChanged, onChildRemoved, get };
 export { auth, analytics, app };
 
 export default { app, db, auth, analytics };

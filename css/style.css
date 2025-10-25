@@ -1,12 +1,36 @@
 /* Minimal placeholder styles for Smart Hub Ultra - add your full styles here */
+:root {
+  --bg: #0b1020;
+  --bg-accent: linear-gradient(135deg, rgba(99,150,255,0.18), rgba(4,22,45,0.9));
+  --card-bg: rgba(12, 22, 42, 0.65);
+  --card-border: rgba(99,150,255,0.2);
+  --text: #e6eef8;
+  --muted: rgba(230,238,248,0.7);
+  --primary: #6396ff;
+  --success: #4ade80;
+  --warning: #f59e0b;
+  --danger: #f87171;
+}
+
 body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
   margin: 0;
-  background: linear-gradient(180deg,#0b1020,#0f1724);
-  color: #e6eef8;
+  background: linear-gradient(180deg,var(--bg),#0f1724);
+  color: var(--text);
+  min-height: 100vh;
+  background-attachment: fixed;
 }
 .page { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
 .glassmorphic { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; box-shadow: 0 8px 32px rgba(2,6,23,0.6); }
+
+.hidden { display: none !important; }
+
+.page-content {
+  width: min(1100px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
 
 /* Dark mode */
 :root.dark-mode, .dark-mode {
@@ -103,6 +127,11 @@ label {
   margin-top: 20px;
 }
 
+.dashboard-nav button {
+  padding: 12px;
+  border-radius: 8px;
+}
+
 .nav-link {
   display: block;
   padding: 12px;
@@ -129,4 +158,269 @@ label {
   background: rgba(0,0,0,0.3);
   color: #4ade80;
   font-family: 'Courier New', monospace;
+}
+
+.dashboard-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 18px;
+  backdrop-filter: blur(14px);
+}
+
+.panel header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  letter-spacing: 0.01em;
+}
+
+.metrics-grid, .status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.metric-card, .status-card {
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metric-label, .status-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.metric-value, .status-value {
+  font-size: 1.3rem;
+}
+
+.status-ok { border-color: rgba(74,222,128,0.25); }
+.status-warn { border-color: rgba(245,158,11,0.3); }
+.status-info { border-color: rgba(99,150,255,0.3); }
+
+.status-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status-chip {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.75rem;
+}
+
+.recent-bot-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recent-bot-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.recent-bot-list li p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  max-width: 220px;
+}
+
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.activity-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.activity-row p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.notification-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.updates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.update-card {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.update-card-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.update-card h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.update-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(99,150,255,0.18);
+  border: 1px solid rgba(99,150,255,0.32);
+  font-size: 0.75rem;
+  margin-right: 6px;
+}
+
+.bot-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.bot-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.bot-card-header h4 {
+  margin: 0 0 4px;
+}
+
+.bot-purpose {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.bot-status {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(99,150,255,0.15);
+  border: 1px solid rgba(99,150,255,0.28);
+  font-size: 0.75rem;
+}
+
+.bot-status-flagged {
+  background: rgba(248,113,113,0.18);
+  border-color: rgba(248,113,113,0.4);
+}
+
+.bot-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bot-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.bot-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bot-tag {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.75rem;
+  text-transform: lowercase;
+}
+
+.bot-roadmap ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.bot-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.bot-card-actions .danger {
+  border-color: rgba(248,113,113,0.35);
+  background: rgba(248,113,113,0.18);
+}
+
+.empty-state {
+  padding: 40px;
+  text-align: center;
+  border-radius: 12px;
+  border: 1px dashed rgba(255,255,255,0.1);
+  color: var(--muted);
+}
+
+@media (max-width: 768px) {
+  .bot-meta {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+  .bot-card-actions {
+    flex-direction: column;
+  }
+  .dashboard-panels {
+    grid-template-columns: 1fr;
+  }
 }

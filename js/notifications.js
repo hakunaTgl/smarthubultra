@@ -1,4 +1,5 @@
 import { IDB, showToast, speak, logActivity } from './utils.js';
+import { dbRef, onChildAdded, get } from './firebaseConfig.js';
 
 export async function loadNotifications() {
   try {
@@ -14,17 +15,10 @@ export async function loadNotifications() {
     document.getElementById('notification-count').classList.toggle('hidden', notifications.length === 0);
 
     document.getElementById('notification-icon').addEventListener('click', () => {
-      document.getElementById('notification-dropdown').classList.toggle('hidden');
+      document.getElementById('notification-list').classList.toggle('hidden');
     });
 
-    firebase.database().ref('notifications').on('child_added', async snapshot => {
-      const notification = snapshot.val();
-      notificationList.insertAdjacentHTML('afterbegin', `<div><p>${notification.message} (${new Date(notification.timestamp).toLocaleString()})</p></div>`);
-      document.getElementById('notification-count').textContent = (await IDB.getAll('notifications')).length + 1;
-      document.getElementById('notification-count').classList.remove('hidden');
-      showToast(`New notification: ${notification.message}`);
-      speak(`New notification: ${notification.message}`);
-    });
+    await bootstrapRemoteNotifications(notificationList);
 
     logActivity('Loaded notifications');
   } catch (error) {
@@ -45,4 +39,29 @@ export async function setupTelegramNotifications() {
   } catch (error) {
     showToast(`Failed to setup Telegram Notifications: ${error.message}`);
   }
+}
+
+async function bootstrapRemoteNotifications(list) {
+  try {
+    const snapshot = await get(dbRef('notifications'));
+    if (snapshot.exists()) {
+      const payload = Object.values(snapshot.val());
+      await IDB.batchSet('notifications', payload);
+    }
+  } catch (error) {
+    console.warn('Failed to load remote notifications', error);
+  }
+
+  const ref = dbRef('notifications');
+  onChildAdded(ref, async snapshot => {
+    const notification = snapshot.val();
+    if (!notification) return;
+    await IDB.batchSet('notifications', [notification]);
+    list.insertAdjacentHTML('afterbegin', `<div><p>${notification.message} (${new Date(notification.timestamp).toLocaleString()})</p></div>`);
+    const count = (await IDB.getAll('notifications')).length;
+    document.getElementById('notification-count').textContent = count;
+    document.getElementById('notification-count').classList.toggle('hidden', count === 0);
+    showToast(`New notification: ${notification.message}`);
+    speak(`New notification: ${notification.message}`);
+  });
 }

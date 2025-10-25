@@ -57,6 +57,24 @@
 - **Account Creation**: Automatic for both methods
 - **Session Management**: Enhanced tracking with method used
 
+### 4. Bot Orchestrator Overhaul *(2025-10-25)*
+- **What changed**: Bot workspace rebuilt with production-ready templates, blueprint import/export, and live activity tracking.
+- **Highlights**:
+  - Four curated starter templates (support, sales, ops, creator) with guardrails and automation roadmaps.
+  - Blueprint import pipeline with validation, plus one-click export for sharing or backup.
+  - Behavioral DNA automatically minted per bot and synced for predictive validation.
+  - Simulation mode forecasts runtime and success probability before deployment.
+  - Realtime Firebase sync keeps local IndexedDB and remote data in lockstep.
+
+### 5. Intelligent Dashboard *(2025-10-25)*
+- **What changed**: Dashboard evolved into a command center with status telemetry, analytics, and update visibility.
+- **Highlights**:
+  - System status grid covering connectivity, service worker lifecycle, and active session health.
+  - Bot metrics tiles with active counts, runtime averages, and status breakdown chips.
+  - Activity feed streaming bot executions, simulations, exports, and alerts.
+  - System update log seeded and wired to Firebase for transparent release notes.
+  - Refreshed notifications panel with realtime sync and inline history.
+
 ## How to Use the New System
 
 ### For Users Joining Sessions:

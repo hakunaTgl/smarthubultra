@@ -62,9 +62,35 @@
         </p>
         <button id="copy-code-btn">Copy Code</button>
       </div>
-      <div id="notification-list"></div>
-      <span id="notification-count" class="hidden"></span>
-      <button id="notification-icon">Notifications</button>
+      <section class="dashboard-panels">
+        <article class="panel glassmorphic">
+          <header><h3>System Status</h3></header>
+          <div id="system-status-grid" class="status-grid"></div>
+        </article>
+        <article class="panel glassmorphic">
+          <header><h3>Bot Metrics</h3></header>
+          <div id="bot-metrics-grid" class="metrics-grid"></div>
+          <div id="bot-status-breakdown" class="status-breakdown"></div>
+        </article>
+        <article class="panel glassmorphic">
+          <header><h3>Recent Bots</h3></header>
+          <ul id="bot-recent-list" class="recent-bot-list"></ul>
+        </article>
+        <article class="panel glassmorphic">
+          <header><h3>Bot Activity</h3></header>
+          <div id="bot-activity-feed" class="activity-feed"></div>
+        </article>
+        <article class="panel glassmorphic">
+          <header><h3>System Updates</h3></header>
+          <div id="system-updates" class="updates-grid"></div>
+        </article>
+        <article class="panel glassmorphic">
+          <header><h3>Notifications</h3></header>
+          <button id="notification-icon">Toggle Feed</button>
+          <span id="notification-count" class="hidden"></span>
+          <div id="notification-list" class="notification-feed"></div>
+        </article>
+      </section>
     </div>
   </div>
   <script src="/js/main.js" type="module"></script>
