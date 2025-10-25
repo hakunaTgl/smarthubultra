@@ -25,8 +25,15 @@ export function logActivity(action) {
     action,
     timestamp: Date.now()
   };
-  IDB.batchSet('tracking', [log]);
-  firebase.database().ref('tracking/' + log.id).set(log);
+  try {
+    IDB.batchSet('tracking', [log]);
+    // Use window.firebase if available, otherwise skip Firebase logging
+    if (window.firebase && window.firebase.database) {
+      window.firebase.database().ref('tracking/' + log.id).set(log);
+    }
+  } catch (err) {
+    console.warn('Failed to log activity:', err);
+  }
 }
 
 export const IDB = {

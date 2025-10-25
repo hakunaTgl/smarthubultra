@@ -109,4 +109,16 @@ async function init() {
   }
 }
 
-init();
+// Initialize the app
+init().catch(error => {
+  console.error('Critical initialization error:', error);
+  document.body.innerHTML += `
+    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                background: rgba(255,0,0,0.1); border: 2px solid red; border-radius: 8px; 
+                padding: 20px; color: white; text-align: center; z-index: 9999;">
+      <h3>Initialization Failed</h3>
+      <p>Error: ${error.message}</p>
+      <button onclick="location.reload()">Reload Page</button>
+    </div>
+  `;
+});

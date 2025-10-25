@@ -35,6 +35,20 @@
         <button type="submit">Sign In (email link)</button>
         <a href="#" id="forgot-password">Resend sign-in link</a>
       </form>
+      
+      <div style="margin: 20px 0; text-align: center; color: var(--muted);">
+        — OR —
+      </div>
+      
+      <form id="instance-code-form">
+        <h3>Join with Instance Code</h3>
+        <input type="email" id="code-email" placeholder="Your Email" required>
+        <input type="text" id="instance-code" placeholder="Instance Code (8 digits)" required maxlength="8" pattern="[0-9]{8}">
+        <button type="submit">Join Session</button>
+        <label style="font-size:0.85rem;color:var(--muted);">
+          Enter an 8-digit instance code to join a shared chat/workspace session.
+        </label>
+      </form>
       <form id="support-form">
         <input type="email" id="support-email" placeholder="Email" required>
         <textarea id="support-message" placeholder="Describe your issue" required></textarea>
@@ -45,10 +59,19 @@
   <!-- Firebase compatibility shim (creates window.firebase for legacy modules) -->
   <script type="module" src="./js/firebase-compat.js"></script>
   <script src="./js/main.js" type="module"></script>
-  <script src="./js/auth.js" type="module"></script>
   <script type="module">
     import { mountVibeQuiz } from './js/vibeQuiz.js';
-    mountVibeQuiz('vibe-quiz-container');
+    import { loadAuth } from './js/auth.js';
+    
+    // Initialize components when DOM is ready
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        mountVibeQuiz('vibe-quiz-container');
+        await loadAuth();
+      } catch (error) {
+        console.error('Component initialization error:', error);
+      }
+    });
   </script>
 </body>
 </html>
