@@ -23,17 +23,17 @@
       <div id="vibe-quiz-container"></div>
       <form id="sign-up-form">
         <input type="email" id="sign-up-email" placeholder="Email" required>
-        <input type="text" id="sign-up-username" placeholder="Username" required>
-        <input type="password" id="sign-up-password" placeholder="Password" required>
-        <input type="text" id="sign-up-six-digit" placeholder="6-Digit Code" pattern="\d{6}" required>
-        <input type="text" id="sign-up-four-digit" placeholder="4-Digit Code" pattern="\d{4}" required>
-        <button type="submit">Sign Up</button>
+        <input type="text" id="sign-up-username" placeholder="Username (optional)">
+        <label style="font-size:0.85rem;color:var(--muted)">We'll send a secure sign-in link to your email. No passwords required.</label>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+          <button id="send-signin-link" type="button">Send Sign-in Link</button>
+          <button type="submit">Send & Create Account</button>
+        </div>
       </form>
       <form id="sign-in-form">
         <input type="email" id="sign-in-email" placeholder="Email" required>
-        <input type="password" id="sign-in-password" placeholder="Password" required>
-        <button type="submit">Sign In</button>
-        <a href="#" id="forgot-password">Forgot Password?</a>
+        <button type="submit">Sign In (email link)</button>
+        <a href="#" id="forgot-password">Resend sign-in link</a>
       </form>
       <form id="support-form">
         <input type="email" id="support-email" placeholder="Email" required>
