@@ -12,8 +12,7 @@
   "rules": {
     "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
     "no-console": "off"
-  }
-  ,
+  },
   "globals": {
     "firebase": "readonly",
     "QRCode": "readonly",
