@@ -74,6 +74,7 @@
   - Activity feed streaming bot executions, simulations, exports, and alerts.
   - System update log seeded and wired to Firebase for transparent release notes.
   - Refreshed notifications panel with realtime sync and inline history.
+  - Live health pulse monitors storage, support backlog, and authentication state every few seconds.
 
 ## How to Use the New System
 

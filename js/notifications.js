@@ -4,6 +4,10 @@ import { dbRef, onChildAdded, get } from './firebaseConfig.js';
 export async function loadNotifications() {
   try {
     const notificationList = document.getElementById('notification-list');
+    const notificationCount = document.getElementById('notification-count');
+    const notificationIcon = document.getElementById('notification-icon');
+    if (!notificationList || !notificationCount) return;
+
     notificationList.innerHTML = '';
     const notifications = await IDB.getAll('notifications');
     notifications.forEach(n => {
@@ -11,14 +15,16 @@ export async function loadNotifications() {
       div.innerHTML = `<p>${n.message} (${new Date(n.timestamp).toLocaleString()})</p>`;
       notificationList.appendChild(div);
     });
-    document.getElementById('notification-count').textContent = notifications.length;
-    document.getElementById('notification-count').classList.toggle('hidden', notifications.length === 0);
+    notificationCount.textContent = notifications.length;
+    notificationCount.classList.toggle('hidden', notifications.length === 0);
 
-    document.getElementById('notification-icon').addEventListener('click', () => {
-      document.getElementById('notification-list').classList.toggle('hidden');
-    });
+    if (notificationIcon) {
+      notificationIcon.addEventListener('click', () => {
+        notificationList.classList.toggle('hidden');
+      });
+    }
 
-    await bootstrapRemoteNotifications(notificationList);
+    await bootstrapRemoteNotifications(notificationList, notificationCount);
 
     logActivity('Loaded notifications');
   } catch (error) {
@@ -41,7 +47,8 @@ export async function setupTelegramNotifications() {
   }
 }
 
-async function bootstrapRemoteNotifications(list) {
+async function bootstrapRemoteNotifications(list, countEl) {
+  if (!list || !countEl) return;
   try {
     const snapshot = await get(dbRef('notifications'));
     if (snapshot.exists()) {
@@ -59,8 +66,8 @@ async function bootstrapRemoteNotifications(list) {
     await IDB.batchSet('notifications', [notification]);
     list.insertAdjacentHTML('afterbegin', `<div><p>${notification.message} (${new Date(notification.timestamp).toLocaleString()})</p></div>`);
     const count = (await IDB.getAll('notifications')).length;
-    document.getElementById('notification-count').textContent = count;
-    document.getElementById('notification-count').classList.toggle('hidden', count === 0);
+    countEl.textContent = count;
+    countEl.classList.toggle('hidden', count === 0);
     showToast(`New notification: ${notification.message}`);
     speak(`New notification: ${notification.message}`);
   });

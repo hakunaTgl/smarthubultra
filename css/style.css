@@ -206,11 +206,22 @@ label {
 
 .metric-value, .status-value {
   font-size: 1.3rem;
+  font-weight: 600;
 }
 
 .status-ok { border-color: rgba(74,222,128,0.25); }
 .status-warn { border-color: rgba(245,158,11,0.3); }
 .status-info { border-color: rgba(99,150,255,0.3); }
+.status-danger { border-color: rgba(248,113,113,0.35); }
+
+.status-card.status-ok .status-value { color: var(--success); }
+.status-card.status-warn .status-value { color: var(--warning); }
+.status-card.status-info .status-value { color: var(--primary); }
+.status-card.status-danger .status-value { color: var(--danger); }
+.status-detail {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
 
 .status-breakdown {
   display: flex;
@@ -279,6 +290,12 @@ label {
   gap: 10px;
   max-height: 240px;
   overflow-y: auto;
+}
+
+#daily-challenges ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  color: var(--muted);
 }
 
 .updates-grid {
