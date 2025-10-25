@@ -4,32 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Hub Ultra - Sign In</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="manifest" href="/manifest.json">
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-    import { getAnalytics } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js';
-    import { getAuth } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-    import { getDatabase } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
-    const firebaseConfig = {
-      apiKey: "AIzaSyAPPllpKiFOcjqxnuk2tRvithFYKSzkQAc",
-      authDomain: "smarthubultra.firebaseapp.com",
-      databaseURL: "https://smarthubultra-default-rtdb.firebaseio.com",
-      projectId: "smarthubultra",
-      storageBucket: "smarthubultra.firebasestorage.app",
-      messagingSenderId: "12039705608",
-      appId: "1:12039705608:web:f1a4383b245275eaa26dbd",
-      measurementId: "G-V24P3DHL9M"
-    };
-    const app = initializeApp(firebaseConfig);
-    getAnalytics(app);
-  </script>
+  <link rel="stylesheet" href="./css/style.css">
+  <link rel="manifest" href="./manifest.json">
+  <!-- Firebase is initialized from modules inside /js/main.js so bundlers resolve the 'firebase' package from node_modules -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
 </head>
 <body>
+  <header class="topbar">
+    <div style="display:flex;gap:8px;align-items:center;padding:12px;">
+      <button id="dark-mode-toggle" aria-pressed="false">🌙 Dark</button>
+      <button id="voice-toggle" aria-pressed="false">🎤 Voice</button>
+      <span id="voice-status" style="margin-left:8px;font-size:0.9rem;color:var(--muted)"></span>
+    </div>
+  </header>
   <div id="auth-page" class="page">
     <div class="page-content glassmorphic">
       <h2>Smart Hub Ultra</h2>
+      <div id="vibe-quiz-container"></div>
       <form id="sign-up-form">
         <input type="email" id="sign-up-email" placeholder="Email" required>
         <input type="text" id="sign-up-username" placeholder="Username" required>
@@ -51,7 +42,13 @@
       </form>
     </div>
   </div>
-  <script src="/js/main.js" type="module"></script>
-  <script src="/js/auth.js" type="module"></script>
+  <!-- Firebase compatibility shim (creates window.firebase for legacy modules) -->
+  <script type="module" src="./js/firebase-compat.js"></script>
+  <script src="./js/main.js" type="module"></script>
+  <script src="./js/auth.js" type="module"></script>
+  <script type="module">
+    import { mountVibeQuiz } from './js/vibeQuiz.js';
+    mountVibeQuiz('vibe-quiz-container');
+  </script>
 </body>
 </html>

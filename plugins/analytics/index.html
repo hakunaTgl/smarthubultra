@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Analytics Plugin - SmartHub</title>
+    <style>body{font-family:system-ui;padding:16px;background:#08121a;color:#e6eef8} h1{font-size:1.2rem}</style>
+  </head>
+  <body>
+    <h1>Analytics (Plugin Stub)</h1>
+    <div id="stats">Loading...</div>
+    <script type="module">
+      // Basic example: read tracking events from /tracking/ via compatibility layer
+      const statsEl = document.getElementById('stats');
+      async function loadStats() {
+        if (window.firebase && window.firebase.database) {
+          window.firebase.database().ref('tracking').on('value', snapshot => {
+            const data = snapshot.val() || {};
+            const keys = Object.keys(data);
+            statsEl.textContent = `Events: ${keys.length}`;
+          });
+        } else {
+          statsEl.textContent = 'Firebase not available in plugin context.';
+        }
+      }
+      loadStats();
+    </script>
+  </body>
+</html>
