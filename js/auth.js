@@ -46,6 +46,33 @@ async function createSessionForUser(userKey, email, extra = {}) {
   return session;
 }
 
+async function ensureUserRecord(email, overrides = {}) {
+  const key = sanitizeKey(email);
+  const ref = dbRef(`users/${key}`);
+  try {
+    const snap = await get(ref);
+    if (!snap.exists()) {
+      const username = email.split('@')[0];
+      const baseUser = {
+        email,
+        username,
+        role: 'user',
+        createdAt: Date.now(),
+        sessions: 0,
+        billing: { balance: 0 },
+        points: 0,
+        badges: []
+      };
+      await set(ref, { ...baseUser, ...overrides });
+    } else if (overrides && Object.keys(overrides).length) {
+      await update(ref, overrides);
+    }
+  } catch (error) {
+    console.warn('ensureUserRecord failed', error);
+  }
+  return key;
+}
+
 // Instance code sign-in function
 async function signInWithInstanceCode(email, instanceCode) {
   try {
@@ -68,16 +95,7 @@ async function signInWithInstanceCode(email, instanceCode) {
     const userSnap = await get(dbRef(`users/${key}`));
     if (!userSnap.exists()) {
       const username = email.split('@')[0];
-      await set(dbRef(`users/${key}`), { 
-        email, 
-        username, 
-        role: 'user', 
-        createdAt: Date.now(), 
-        sessions: 0, 
-        billing: { balance: 0 }, 
-        points: 0, 
-        badges: [] 
-      });
+      await ensureUserRecord(email, { username });
     }
     
     // Mark code as used
@@ -85,6 +103,15 @@ async function signInWithInstanceCode(email, instanceCode) {
     
     // Create session
     await createSessionForUser(key, email, { method: 'instance-code', code: instanceCode });
+    await update(dbRef(`users/${key}`), {
+      lastSignInMethod: 'instance-code',
+      lastInstanceCode: {
+        codeSuffix: instanceCode.slice(-4),
+        usedAt: Date.now(),
+        status: 'consumed',
+        issuer: codeData.createdBy || 'system'
+      }
+    });
     
     showToast('Successfully joined with instance code!');
     logActivity('Signed in via instance code');
@@ -130,6 +157,19 @@ export async function loadAuth() {
         await sendSignInLinkToEmail(auth, email, actionCodeSettings);
         localStorage.setItem('emailForSignIn', email);
         if (username) localStorage.setItem('pendingUsername', username);
+        const overrides = {
+          lastEmailLink: {
+            sentAt: Date.now(),
+            status: 'sent',
+            method: 'email-link'
+          },
+          lastSignInMethod: 'email-link'
+        };
+        if (username) overrides.username = username;
+        const sanitizedKey = await ensureUserRecord(email, overrides);
+        if (sanitizedKey) {
+          localStorage.setItem('currentUser', sanitizedKey);
+        }
         showToast('Sign-in link sent. Check your email.');
         logActivity('Sent sign-in link');
       } catch (err) {
@@ -222,10 +262,25 @@ export async function loadAuth() {
           const key = sanitizeKey(user.email);
           const pendingUsername = localStorage.getItem('pendingUsername') || user.displayName || (user.email ? user.email.split('@')[0] : '');
           const userSnap = await get(dbRef(`users/${key}`));
+          let existingProfile = null;
           if (!userSnap.exists()) {
-            await set(dbRef(`users/${key}`), { email: user.email, username: pendingUsername, role: 'user', createdAt: Date.now(), sessions: 0, billing: { balance: 0 }, points: 0, badges: [] });
+            await ensureUserRecord(user.email, { username: pendingUsername });
+          } else {
+            existingProfile = userSnap.val();
+            if (pendingUsername && existingProfile.username !== pendingUsername) {
+              await update(dbRef(`users/${key}`), { username: pendingUsername });
+            }
           }
           await createSessionForUser(key, user.email, { method: 'email-link' });
+          const previousLinkMeta = existingProfile?.lastEmailLink || {};
+          await update(dbRef(`users/${key}`), {
+            lastSignInMethod: 'email-link',
+            lastEmailLink: {
+              ...previousLinkMeta,
+              usedAt: Date.now(),
+              status: 'used'
+            }
+          });
           showToast('Signed in with email link');
           logActivity('Signed in via email link');
           localStorage.removeItem('pendingUsername');
