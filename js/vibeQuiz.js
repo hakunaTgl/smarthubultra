@@ -131,7 +131,12 @@ function mountVibeQuiz(containerId) {
             </select>
           </label>
         </fieldset>
-        <div class="vibe-quiz__actions"><button type="submit">Generate living profile</button></div>
+        <div class="vibe-quiz__actions">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button type="button" id="vibe-quick-mode">Quick Mode</button>
+            <button type="submit">Generate living profile</button>
+          </div>
+        </div>
       </form>
       <section id="vibe-result" class="vibe-quiz__result" aria-live="polite"></section>
       <section id="vibe-history" class="vibe-quiz__history"></section>
@@ -141,6 +146,19 @@ function mountVibeQuiz(containerId) {
   const form = container.querySelector('#vibe-quiz-form');
   const resultEl = container.querySelector('#vibe-result');
   const historyEl = container.querySelector('#vibe-history');
+  // Quick mode: randomize answers and submit
+  const quickBtn = container.querySelector('#vibe-quick-mode');
+  if (quickBtn) {
+    quickBtn.addEventListener('click', () => {
+      const selects = container.querySelectorAll('select[data-question-select]');
+      selects.forEach((sel) => {
+        const opts = Array.from(sel.options).filter(o => o.value);
+        const pick = opts[Math.floor(Math.random() * opts.length)];
+        if (pick) sel.value = pick.value;
+      });
+      setTimeout(() => form.requestSubmit(), 120);
+    });
+  }
   const userKey = getUserKey();
   const state = { history: loadHistory(userKey) };
 
@@ -167,6 +185,12 @@ function mountVibeQuiz(containerId) {
         vibeScore: profile.vibeScore,
         trajectory: insights.trajectory
       });
+      // Notify other modules about recommended boosters (non-blocking)
+      try {
+        window.dispatchEvent(new CustomEvent('vibe-boosters', { detail: { user: userKey, boosters: insights.systemBoosters, growthEdge: insights.growthEdge } }));
+      } catch (evErr) {
+        console.warn('vibe-boosters dispatch failed', evErr);
+      }
     } catch (err) {
       console.error('vibe save failed', err);
       showToast('Cloud sync unavailable — keeping the profile locally.');
@@ -336,7 +360,6 @@ function renderResult(container, profile, insights) {
   const boosters = insights.systemBoosters
     .map((tip) => `<li>${tip}</li>`)
     .join('');
-
   container.innerHTML = `
     <div class="vibe-report">
       <h4>${insights.narrative.headline}</h4>
@@ -348,8 +371,57 @@ function renderResult(container, profile, insights) {
         <h5>System boosters to trigger now:</h5>
         <ul>${boosters}</ul>
       </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:8px;">
+        <button id="export-dna-json">Export JSON</button>
+        <button id="export-dna-csv">Export CSV</button>
+      </div>
     </div>
   `;
+
+  // Wire export buttons safely
+  try {
+    const exportJson = container.querySelector('#export-dna-json');
+    const exportCsv = container.querySelector('#export-dna-csv');
+    const payload = buildDnaRecord(profile, insights);
+    if (exportJson) exportJson.addEventListener('click', () => {
+      try {
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vibe-${payload.user || 'anon'}-${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.warn('Export JSON failed', e);
+        showToast('Export failed');
+      }
+    });
+    if (exportCsv) exportCsv.addEventListener('click', () => {
+      try {
+        const headers = ['user','timestamp','dominantTrait','vibeScore','normalized'];
+        const normalized = Object.entries(payload.normalized || {}).map(([k,v]) => `${k}:${v}`).join('|');
+        const row = [`"${payload.user || 'anon'}"`,`"${payload.timestamp}"`,`"${payload.dominantTrait}"`,`"${payload.vibeScore}"`,`"${normalized}"`];
+        const csv = headers.join(',') + '\n' + row.join(',');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vibe-${payload.user || 'anon'}-${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.warn('Export CSV failed', e);
+        showToast('Export failed');
+      }
+    });
+  } catch (err) {
+    console.warn('Wiring exports failed', err);
+  }
 }
 
 function renderHistory(container, history) {

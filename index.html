@@ -35,9 +35,23 @@
         <button type="submit">Sign In (email link)</button>
         <a href="#" id="forgot-password">Resend sign-in link</a>
       </form>
+
+      <div id="magic-link-fallback" class="auth-fallback hidden">
+        <p class="auth-fallback__title">Instant magic link</p>
+        <p id="magic-link-meta" class="auth-fallback__meta"></p>
+        <div class="auth-fallback__field">
+          <input id="magic-link-url" type="text" readonly>
+          <button id="magic-link-copy" type="button">Copy</button>
+        </div>
+      </div>
       
       <div style="margin: 20px 0; text-align: center; color: var(--muted);">
         — OR —
+      </div>
+
+      <div class="auth-quick-actions">
+        <button id="guest-login-btn" type="button">Continue as Guest</button>
+        <button id="admin-fast-login-btn" type="button">Executive Fast Login</button>
       </div>
       
       <form id="instance-code-form">
@@ -49,6 +63,27 @@
           Enter an 8-digit instance code to join a shared chat/workspace session.
         </label>
       </form>
+
+      <section class="auth-invite">
+        <h3>Invite a collaborator</h3>
+        <form id="invite-collab-form">
+          <input type="email" id="invite-email" placeholder="Their email" required>
+          <select id="invite-role">
+            <option value="user" selected>Standard user</option>
+            <option value="guest">Guest</option>
+            <option value="admin">Admin (executive)</option>
+          </select>
+          <button type="submit">Generate invite link</button>
+        </form>
+        <div id="invite-link-output" class="auth-fallback hidden">
+          <p class="auth-fallback__title">Share this invite link</p>
+          <p id="invite-link-meta" class="auth-fallback__meta"></p>
+          <div class="auth-fallback__field">
+            <input id="invite-link-url" type="text" readonly>
+            <button id="invite-link-copy" type="button">Copy</button>
+          </div>
+        </div>
+      </section>
       <form id="support-form">
         <input type="email" id="support-email" placeholder="Email" required>
         <textarea id="support-message" placeholder="Describe your issue" required></textarea>

@@ -4,6 +4,26 @@ import { startHoloGuide } from './holoGuide.js';
 import { dbRef, set, get, update, auth } from './firebaseConfig.js';
 import { sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
 
+const MAGIC_LINK_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
+const ADMIN_FASTPASS_CODE = 'SMARTHUB-EXEC-2025';
+const CORE_ACCOUNTS = [
+  {
+    email: 'boss@smarthubultra.dev',
+    username: 'Boss Operator',
+    role: 'admin',
+    accessTier: 'executive',
+    badges: ['executive', 'visionary']
+  },
+  {
+    email: 'admin@smarthubultra.dev',
+    username: 'Admin Control',
+    role: 'admin',
+    accessTier: 'control',
+    badges: ['admin', 'guardian']
+  }
+];
+const GUEST_NAME_POOL = ['Nova Guest', 'Pulse Guest', 'Velocity Guest', 'Orbit Guest', 'Flux Guest'];
+
 function sanitizeKey(email) {
   return (email || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -15,6 +35,17 @@ function makeSessionId() {
 function generateCode(digits = 6) {
   const min = 10 ** (digits - 1);
   return (Math.floor(min + Math.random() * 9 * min)).toString();
+}
+
+function pickRandom(list = []) {
+  if (!list.length) return '';
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function describeExpiry(expiresAt) {
+  const remainingMs = Math.max(0, (expiresAt || Date.now()) - Date.now());
+  const minutes = Math.max(1, Math.round(remainingMs / 60000));
+  return `${minutes} minute${minutes === 1 ? '' : 's'}`;
 }
 
 async function createSessionForUser(userKey, email, extra = {}) {
@@ -46,6 +77,113 @@ async function createSessionForUser(userKey, email, extra = {}) {
   return session;
 }
 
+async function ensureCoreAccounts() {
+  await Promise.all(CORE_ACCOUNTS.map(async (account) => {
+    const key = sanitizeKey(account.email);
+    const ref = dbRef(`users/${key}`);
+    try {
+      const snap = await get(ref);
+      if (!snap.exists()) {
+        const baseUser = {
+          email: account.email,
+          username: account.username,
+          role: account.role,
+          createdAt: Date.now(),
+          sessions: 0,
+          billing: { balance: 0 },
+          points: 0,
+          badges: account.badges || [],
+          accessTier: account.accessTier || 'executive'
+        };
+        await set(ref, baseUser);
+      } else {
+        const data = snap.val() || {};
+        const updates = {};
+        if (data.role !== account.role) updates.role = account.role;
+        if (!data.username && account.username) updates.username = account.username;
+        if (account.accessTier && data.accessTier !== account.accessTier) updates.accessTier = account.accessTier;
+        if (Array.isArray(account.badges)) {
+          const merged = Array.from(new Set([...(data.badges || []), ...account.badges]));
+          updates.badges = merged;
+        }
+        if (Object.keys(updates).length) {
+          await update(ref, updates);
+        }
+      }
+    } catch (err) {
+      console.warn('ensureCoreAccounts failed for', account.email, err);
+    }
+  }));
+}
+
+async function generateFallbackMagicLink(email, metadata = {}) {
+  const token = `ml_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+  const createdAt = Date.now();
+  const expiresAt = createdAt + MAGIC_LINK_EXPIRY_MS;
+  const issuer = metadata.issuer || localStorage.getItem('currentUser') || 'system';
+  const record = {
+    email,
+    createdAt,
+    expiresAt,
+    used: false,
+    metadata: {
+      ...metadata,
+      issuer,
+      method: metadata.method || 'magic-link'
+    }
+  };
+  try {
+    await set(dbRef(`magicLinks/${token}`), record);
+  } catch (err) {
+    console.warn('Failed to persist fallback magic link', err);
+    throw err;
+  }
+  const url = buildMagicLinkUrl(token);
+  console.info('Magic link generated for', email, url);
+  return { token, url, expiresAt };
+}
+
+function buildMagicLinkUrl(token) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('magicLink', token);
+  return url.toString();
+}
+
+function stripQueryParam(name) {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(name)) return;
+  url.searchParams.delete(name);
+  const newUrl = url.search ? `${url.pathname}?${url.searchParams.toString()}` : url.pathname;
+  window.history.replaceState({}, document.title, newUrl);
+}
+
+async function copyToClipboardSafe(value) {
+  if (!value) return false;
+  try {
+    await navigator.clipboard.writeText(value);
+    showToast('Link copied to clipboard');
+    return true;
+  } catch (err) {
+    console.warn('Clipboard copy failed', err);
+    try {
+      const helper = document.createElement('textarea');
+      helper.value = value;
+      helper.style.position = 'fixed';
+      helper.style.opacity = '0';
+      document.body.appendChild(helper);
+      helper.select();
+      document.execCommand('copy');
+      document.body.removeChild(helper);
+      showToast('Link copied to clipboard');
+      return true;
+    } catch (fallbackErr) {
+      console.warn('Fallback copy failed', fallbackErr);
+      showToast('Unable to copy automatically — copy the link manually.');
+      return false;
+    }
+  }
+}
+
 async function ensureUserRecord(email, overrides = {}) {
   const key = sanitizeKey(email);
   const ref = dbRef(`users/${key}`);
@@ -71,6 +209,148 @@ async function ensureUserRecord(email, overrides = {}) {
     console.warn('ensureUserRecord failed', error);
   }
   return key;
+}
+
+async function completeFallbackMagicLink(token) {
+  const ref = dbRef(`magicLinks/${token}`);
+  try {
+    const snap = await get(ref);
+    if (!snap.exists()) {
+      showToast('Magic link invalid or already cleared.');
+      return false;
+    }
+    const entry = snap.val();
+    if (entry.used) {
+      showToast('Magic link already used. Request a fresh link.');
+      return false;
+    }
+    if (entry.expiresAt && entry.expiresAt < Date.now()) {
+      showToast('Magic link expired. Request a new one.');
+      return false;
+    }
+    const overrides = entry.metadata?.overrides || {};
+    const key = await ensureUserRecord(entry.email, overrides);
+    await createSessionForUser(key, entry.email, { method: entry.metadata?.method || 'magic-link' });
+    await update(dbRef(`users/${key}`), {
+      lastSignInMethod: entry.metadata?.method || 'magic-link',
+      lastEmailLink: {
+        sentAt: entry.createdAt,
+        usedAt: Date.now(),
+        status: 'used-fallback',
+        issuer: entry.metadata?.issuer || 'system'
+      }
+    });
+    await update(ref, { used: true, usedAt: Date.now() });
+    showToast('Signed in via instant magic link');
+    logActivity('Signed in via instant magic link', { tokenSuffix: token.slice(-6) });
+    closeAllModals();
+    await startHoloGuide();
+    await loadDashboard();
+    return true;
+  } catch (err) {
+    console.error('completeFallbackMagicLink failed', err);
+    showToast('Magic link sign-in failed');
+    return false;
+  } finally {
+    stripQueryParam('magicLink');
+  }
+}
+
+async function processMagicLinkFromUrl() {
+  const url = new URL(window.location.href);
+  const token = url.searchParams.get('magicLink');
+  if (!token) return false;
+  return completeFallbackMagicLink(token);
+}
+
+async function startGuestSession() {
+  try {
+    const handle = pickRandom(GUEST_NAME_POOL) || 'Guest';
+    const email = `guest+${Date.now()}@guest.smarthub`; 
+    const key = await ensureUserRecord(email, {
+      username: handle,
+      role: 'guest',
+      guest: { createdAt: Date.now(), label: handle }
+    });
+    await createSessionForUser(key, email, { method: 'guest' });
+    await update(dbRef(`users/${key}`), {
+      lastSignInMethod: 'guest',
+      guest: { createdAt: Date.now(), label: handle }
+    });
+    localStorage.removeItem('emailForSignIn');
+    localStorage.removeItem('pendingUsername');
+    showToast('Guest session activated');
+    logActivity('guest-session:start', { user: key });
+    closeAllModals();
+    await startHoloGuide();
+    await loadDashboard();
+  } catch (err) {
+    console.error('Guest session error', err);
+    showToast('Unable to start guest session');
+  }
+}
+
+async function fastLoginAsAdmin() {
+  const code = window.prompt('Enter executive override code');
+  if (!code) {
+    showToast('Override cancelled');
+    return;
+  }
+  if (code.trim() !== ADMIN_FASTPASS_CODE) {
+    showToast('Invalid executive override code');
+    return;
+  }
+  const email = window.prompt('Admin email', CORE_ACCOUNTS[0]?.email || 'boss@smarthubultra.dev');
+  if (!email) {
+    showToast('Admin email required');
+    return;
+  }
+  const target = CORE_ACCOUNTS.find(account => account.email.toLowerCase() === email.toLowerCase());
+  const profile = target || {
+    email,
+    username: email.split('@')[0],
+    role: 'admin',
+    accessTier: 'executive',
+    badges: ['admin']
+  };
+  try {
+    const key = await ensureUserRecord(profile.email, {
+      username: profile.username,
+      role: profile.role,
+      accessTier: profile.accessTier,
+      badges: profile.badges
+    });
+    await update(dbRef(`users/${key}`), {
+      role: profile.role,
+      accessTier: profile.accessTier,
+      badges: profile.badges
+    });
+    localStorage.removeItem('emailForSignIn');
+    localStorage.removeItem('pendingUsername');
+    await createSessionForUser(key, profile.email, { method: 'admin-fastpass' });
+    showToast('Executive session restored');
+    logActivity('admin-fastpass', { account: profile.email });
+    closeAllModals();
+    await startHoloGuide();
+    await loadDashboard();
+  } catch (err) {
+    console.error('Admin fast login failed', err);
+    showToast('Unable to start admin session');
+  }
+}
+
+function updateLinkPanel(panel, metaEl, inputEl, email, url, expiresAt, contextLabel) {
+  if (!panel || !metaEl || !inputEl) return;
+  panel.classList.remove('hidden');
+  metaEl.textContent = `${contextLabel} for ${email} • expires in ${describeExpiry(expiresAt)}`;
+  inputEl.value = url;
+}
+
+function hideLinkPanel(panel, metaEl, inputEl) {
+  if (!panel || !metaEl || !inputEl) return;
+  panel.classList.add('hidden');
+  metaEl.textContent = '';
+  inputEl.value = '';
 }
 
 // Instance code sign-in function
@@ -142,46 +422,97 @@ export async function generateInstanceCode(expirationHours = 24) {
 export async function loadAuth() {
   try {
     const signUpForm = document.getElementById('sign-up-form');
+    const signUpEmailInput = document.getElementById('sign-up-email');
+    const signUpUsernameInput = document.getElementById('sign-up-username');
     const signInForm = document.getElementById('sign-in-form');
+    const signInEmailInput = document.getElementById('sign-in-email');
     const forgotLink = document.getElementById('forgot-password');
     const sendBtn = document.getElementById('send-signin-link');
     const instanceCodeForm = document.getElementById('instance-code-form');
+    const instanceCodeInput = document.getElementById('instance-code');
+    const codeEmailInput = document.getElementById('code-email');
+    const supportForm = document.getElementById('support-form');
+
+    const fallbackPanel = document.getElementById('magic-link-fallback');
+    const fallbackMeta = document.getElementById('magic-link-meta');
+    const fallbackLinkInput = document.getElementById('magic-link-url');
+    const fallbackCopyBtn = document.getElementById('magic-link-copy');
+
+    const guestBtn = document.getElementById('guest-login-btn');
+    const adminBtn = document.getElementById('admin-fast-login-btn');
+
+    const inviteForm = document.getElementById('invite-collab-form');
+    const inviteEmailInput = document.getElementById('invite-email');
+    const inviteRoleSelect = document.getElementById('invite-role');
+    const invitePanel = document.getElementById('invite-link-output');
+    const inviteMeta = document.getElementById('invite-link-meta');
+    const inviteLinkInput = document.getElementById('invite-link-url');
+    const inviteCopyBtn = document.getElementById('invite-link-copy');
+
+    await ensureCoreAccounts();
+    await processMagicLinkFromUrl();
 
     const actionCodeSettings = {
       url: window.location.origin + window.location.pathname,
       handleCodeInApp: true
     };
 
-    const sendLink = async (email, username) => {
+    const sendLink = async (emailRaw, usernameRaw = '', overrideOptions = {}) => {
+      const email = (emailRaw || '').trim();
+      const username = (usernameRaw || '').trim();
+      if (!email) {
+        showToast('Provide a valid email');
+        return null;
+      }
+
+      const overrides = {
+        lastEmailLink: {
+          sentAt: Date.now(),
+          status: 'sent',
+          method: 'email-link'
+        },
+        lastSignInMethod: 'email-link',
+        ...overrideOptions
+      };
+      if (username) overrides.username = username;
+      if (!overrides.role) overrides.role = 'user';
+
+      const sanitizedKey = await ensureUserRecord(email, overrides);
+      if (sanitizedKey) {
+        localStorage.setItem('currentUser', sanitizedKey);
+      }
+      localStorage.setItem('emailForSignIn', email);
+      if (username) localStorage.setItem('pendingUsername', username);
+
+      let emailSent = false;
       try {
         await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-        localStorage.setItem('emailForSignIn', email);
-        if (username) localStorage.setItem('pendingUsername', username);
-        const overrides = {
-          lastEmailLink: {
-            sentAt: Date.now(),
-            status: 'sent',
-            method: 'email-link'
-          },
-          lastSignInMethod: 'email-link'
-        };
-        if (username) overrides.username = username;
-        const sanitizedKey = await ensureUserRecord(email, overrides);
-        if (sanitizedKey) {
-          localStorage.setItem('currentUser', sanitizedKey);
-        }
-        showToast('Sign-in link sent. Check your email.');
-        logActivity('Sent sign-in link');
+        emailSent = true;
+        showToast('Sign-in email dispatched. Instant link ready below.');
+        logActivity('Sent sign-in link', { channel: 'email', email });
       } catch (err) {
         console.error('sendSignInLinkToEmail', err);
-        showToast('Failed to send sign-in link');
+        showToast('Email delivery pending. Use the instant link below.');
+      }
+
+      try {
+        const fallback = await generateFallbackMagicLink(email, { overrides, method: 'email-link' });
+        updateLinkPanel(fallbackPanel, fallbackMeta, fallbackLinkInput, email, fallback.url, fallback.expiresAt, 'Magic link');
+        logActivity('Generated fallback magic link', { email });
+        return fallback;
+      } catch (fallbackErr) {
+        console.error('Fallback magic link generation failed', fallbackErr);
+        if (!emailSent) {
+          showToast('Unable to prepare fallback link. Try again shortly.');
+        }
+        return null;
       }
     };
 
     if (sendBtn) sendBtn.addEventListener('click', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('sign-up-email').value;
-      const username = document.getElementById('sign-up-username').value || '';
+      const email = signUpEmailInput?.value || '';
+      const username = signUpUsernameInput?.value || '';
       if (!email) { showToast('Please provide an email'); return; }
       await sendLink(email, username);
     });
@@ -189,8 +520,8 @@ export async function loadAuth() {
     if (signUpForm) {
       signUpForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('sign-up-email').value;
-        const username = document.getElementById('sign-up-username').value || '';
+        const email = signUpEmailInput?.value || '';
+        const username = signUpUsernameInput?.value || '';
         if (!email) { showToast('Please provide an email'); return; }
         await sendLink(email, username);
       });
@@ -199,7 +530,7 @@ export async function loadAuth() {
     if (signInForm) {
       signInForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('sign-in-email').value;
+        const email = signInEmailInput?.value || '';
         if (!email) { showToast('Enter your email to receive a sign-in link'); return; }
         await sendLink(email);
       });
@@ -209,8 +540,8 @@ export async function loadAuth() {
     if (instanceCodeForm) {
       instanceCodeForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const instanceCode = document.getElementById('instance-code').value;
-        const email = document.getElementById('code-email').value;
+        const instanceCode = instanceCodeInput?.value;
+        const email = codeEmailInput?.value;
         if (!instanceCode || !email) {
           showToast('Please enter both email and instance code');
           return;
@@ -226,14 +557,73 @@ export async function loadAuth() {
     if (forgotLink) {
       forgotLink.addEventListener('click', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('sign-in-email').value || document.getElementById('sign-up-email').value;
+        const email = (signInEmailInput?.value || signUpEmailInput?.value || '').trim();
         if (!email) { showToast('Enter your email to resend link'); return; }
         await sendLink(email);
       });
     }
 
+    if (fallbackCopyBtn) {
+      fallbackCopyBtn.addEventListener('click', async () => {
+        const value = fallbackLinkInput?.value;
+        if (!value) {
+          showToast('Generate a link first');
+          return;
+        }
+        await copyToClipboardSafe(value);
+      });
+    }
+
+    if (guestBtn) {
+      guestBtn.addEventListener('click', () => {
+        startGuestSession();
+      });
+    }
+
+    if (adminBtn) {
+      adminBtn.addEventListener('click', () => {
+        fastLoginAsAdmin();
+      });
+    }
+
+    if (inviteForm) {
+      inviteForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = inviteEmailInput?.value || '';
+        const role = inviteRoleSelect?.value || 'user';
+        if (!email) {
+          showToast('Enter an email to invite');
+          return;
+        }
+        try {
+          const overrides = { role };
+          if (role === 'guest') {
+            overrides.username = `Guest-${email.split('@')[0]}`;
+          }
+          await ensureUserRecord(email, overrides);
+          const fallback = await generateFallbackMagicLink(email, { overrides, method: 'invite-link' });
+          updateLinkPanel(invitePanel, inviteMeta, inviteLinkInput, email, fallback.url, fallback.expiresAt, 'Invite link');
+          showToast('Invite link ready to share');
+          logActivity('Generated invite link', { email, role });
+        } catch (err) {
+          console.error('Invite generation failed', err);
+          showToast('Failed to generate invite link');
+        }
+      });
+    }
+
+    if (inviteCopyBtn) {
+      inviteCopyBtn.addEventListener('click', async () => {
+        const value = inviteLinkInput?.value;
+        if (!value) {
+          showToast('Create an invite first');
+          return;
+        }
+        await copyToClipboardSafe(value);
+      });
+    }
+
     // Support tickets
-    const supportForm = document.getElementById('support-form');
     if (supportForm) {
       supportForm.addEventListener('submit', async e => {
         e.preventDefault();
@@ -281,6 +671,7 @@ export async function loadAuth() {
               status: 'used'
             }
           });
+          hideLinkPanel(fallbackPanel, fallbackMeta, fallbackLinkInput);
           showToast('Signed in with email link');
           logActivity('Signed in via email link');
           localStorage.removeItem('pendingUsername');

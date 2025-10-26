@@ -2,6 +2,17 @@ import { IDB, showToast, speak, logActivity } from './utils.js';
 
 const FALLBACK_BEHAVIORAL_PREFIX = 'behavioral_dna:';
 const MAX_TIMELINE_ITEMS = 14;
+// Simple in-memory cache for behavioral DNA to reduce repeated reads
+const DNA_CACHE = { data: null, ts: 0, ttl: 60 * 1000 };
+let CURRENT_FILTER = '';
+
+function debounce(fn, wait = 250) {
+  let t = null;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), wait);
+  };
+}
 
 export async function loadBossView() {
   try {
@@ -23,6 +34,8 @@ export async function loadBossView() {
     renderDnaOverview(dom.dnaOverview, dnaIndex, users);
     renderDnaTimeline(dom.dnaTimeline, dnaIndex, users);
     renderGrowthSignals(dom.dnaGrowth, dnaIndex);
+  wireSearch(dom);
+  wireDnaExport(dom);
     wireBroadcast(dom.broadcastBtn, dom.announcementInput);
 
     showToast('Boss intelligence center ready');
@@ -63,6 +76,10 @@ async function safeGetAll(store) {
 }
 
 async function fetchBehavioralDna() {
+  const now = Date.now();
+  if (DNA_CACHE.data && (now - DNA_CACHE.ts) < DNA_CACHE.ttl) {
+    return DNA_CACHE.data;
+  }
   const records = [];
   try {
     if (window.firebase && window.firebase.database) {
@@ -93,7 +110,11 @@ async function fetchBehavioralDna() {
     }
   }
 
-  return records.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  const sorted = records.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  // cache results
+  DNA_CACHE.data = sorted;
+  DNA_CACHE.ts = Date.now();
+  return sorted;
 }
 
 function normalizeDna(entry) {
@@ -126,20 +147,27 @@ function renderUserRoster(container, users = [], dnaIndex) {
     container.innerHTML = '<p class="empty-state">No users synced yet.</p>';
     return;
   }
-  container.innerHTML = users
+  const filter = (CURRENT_FILTER || '').toLowerCase().trim();
+  const rows = users
+    .slice()
     .sort((a, b) => (b.sessions || 0) - (a.sessions || 0))
+    .filter(user => {
+      if (!filter) return true;
+      const key = ((user.email || '') + ' ' + (user.username || '')).toLowerCase();
+      return key.includes(filter) || (user.role || '').toLowerCase().includes(filter);
+    })
     .map(user => {
       const sanitized = sanitizeKey(user.email);
       const dna = dnaIndex.get(sanitized)?.records?.[0];
       const sessions = user.sessions || 0;
       const lastMethod = user.lastSignInMethod || 'unknown';
-  const lastLink = formatTimestamp(user.lastEmailLink?.usedAt);
-  const lastInstance = formatTimestamp(user.lastInstanceCode?.usedAt);
+      const lastLink = formatTimestamp(user.lastEmailLink?.usedAt);
+      const lastInstance = formatTimestamp(user.lastInstanceCode?.usedAt);
       const dominant = dna ? formatTrait(dna.dominantTrait, dna.vibeScore) : 'No vibe profile yet';
       const trajectory = dna?.trajectory || '—';
       const growthEdge = dna?.growthEdge?.target ? dna.growthEdge.target.toUpperCase() : '—';
       return `
-  <article class="boss-entity-card">
+        <article class="boss-entity-card">
           <header>
             <div>
               <strong>${user.username || user.email}</strong>
@@ -158,8 +186,8 @@ function renderUserRoster(container, users = [], dnaIndex) {
           </dl>
         </article>
       `;
-    })
-    .join('');
+    });
+  container.innerHTML = rows.join('') || '<p class="empty-state">No matching users.</p>';
 }
 
 function renderBotInventory(container, bots = []) {
@@ -421,6 +449,59 @@ function wireBroadcast(button, input) {
     input.value = '';
     showToast('Announcement broadcasted');
     logActivity('boss-view:broadcast', { length: message.length });
+  });
+}
+
+function wireSearch(dom) {
+  const input = document.getElementById('boss-search');
+  if (!input) return;
+  const handler = debounce(async (ev) => {
+    CURRENT_FILTER = (input.value || '').trim();
+    try {
+      const [users, dnaRecords] = await Promise.all([IDB.getAll('users'), fetchBehavioralDna()]);
+      const dnaIndex = indexBehavioralDna(dnaRecords);
+      renderUserRoster(dom.users, users, dnaIndex);
+      renderDnaOverview(dom.dnaOverview, dnaIndex, users);
+    } catch (err) {
+      console.warn('Search handler failed', err);
+    }
+  }, 200);
+  input.addEventListener('input', handler);
+}
+
+function wireDnaExport(dom) {
+  const btn = document.getElementById('boss-export-csv');
+  if (!btn) return;
+  if (btn.dataset.bound === 'true') return;
+  btn.dataset.bound = 'true';
+  btn.addEventListener('click', async () => {
+    try {
+      const records = await fetchBehavioralDna();
+      if (!records || !records.length) {
+        showToast('No DNA records to export');
+        return;
+      }
+      const headers = ['user','timestamp','dominantTrait','vibeScore','normalized','boosters'];
+      const rows = records.map(r => {
+        const normalized = Object.entries(r.normalized || {}).map(([k,v]) => `${k}:${v}`).join('|');
+        const boosters = (r.boosters || []).join('; ');
+        return [`"${r.user}"`,`"${new Date(r.timestamp).toISOString()}"`,`"${r.dominantTrait || ''}"`,`"${r.vibeScore || ''}"`,`"${normalized}"`,`"${boosters}"`].join(',');
+      });
+      const csv = headers.join(',') + '\n' + rows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `behavioral_dna_export-${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('DNA export started');
+    } catch (err) {
+      console.warn('DNA export failed', err);
+      showToast('Export failed');
+    }
   });
 }
 
