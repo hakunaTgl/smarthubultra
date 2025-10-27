@@ -1,4 +1,4 @@
-import { showToast, speak, logActivity, closeAllModals } from './utils.js';
+ import { showToast, speak, logActivity, closeAllModals } from './utils.js';
 import { loadDashboard } from './dashboard.js';
 import { startHoloGuide } from './holoGuide.js';
 import { dbRef, set, get, update, auth } from './firebaseConfig.js';
@@ -181,6 +181,16 @@ async function copyToClipboardSafe(value) {
       showToast('Unable to copy automatically — copy the link manually.');
       return false;
     }
+  }
+}
+
+function openMailClient(email, subject, body) {
+  try {
+    const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    // open in new window/tab to avoid navigation replacement
+    window.open(mailto, '_blank');
+  } catch (err) {
+    console.warn('Failed to open mail client', err);
   }
 }
 
@@ -484,29 +494,33 @@ export async function loadAuth() {
       localStorage.setItem('emailForSignIn', email);
       if (username) localStorage.setItem('pendingUsername', username);
 
+      // Always generate a fallback magic link first so there's a usable URL even if email sending fails
+      let fallback = null;
+      try {
+        fallback = await generateFallbackMagicLink(email, { overrides, method: 'email-link' });
+        updateLinkPanel(fallbackPanel, fallbackMeta, fallbackLinkInput, email, fallback.url, fallback.expiresAt, 'Magic link');
+        logActivity('Generated fallback magic link', { email });
+      } catch (fallbackErr) {
+        console.error('Fallback magic link generation failed', fallbackErr);
+      }
+
+      // Attempt to send the Firebase email link; if it fails, open the user's mail client prefilled with the fallback URL
       let emailSent = false;
       try {
         await sendSignInLinkToEmail(auth, email, actionCodeSettings);
         emailSent = true;
-        showToast('Sign-in email dispatched. Instant link ready below.');
+        showToast('Sign-in email dispatched. Check your inbox.');
         logActivity('Sent sign-in link', { channel: 'email', email });
       } catch (err) {
-        console.error('sendSignInLinkToEmail', err);
-        showToast('Email delivery pending. Use the instant link below.');
+        console.error('sendSignInLinkToEmail failed', err);
+        showToast('Email delivery failed — providing instant link and a prefilled email draft.');
+        if (fallback && email) {
+          // Open mail client with prefilled subject/body so user can forward/copy the link
+          openMailClient(email, 'SmartHubUltra sign-in link', `Use this link to sign in: ${fallback.url}\n\nLink expires in ${describeExpiry(fallback.expiresAt)}`);
+        }
       }
 
-      try {
-        const fallback = await generateFallbackMagicLink(email, { overrides, method: 'email-link' });
-        updateLinkPanel(fallbackPanel, fallbackMeta, fallbackLinkInput, email, fallback.url, fallback.expiresAt, 'Magic link');
-        logActivity('Generated fallback magic link', { email });
-        return fallback;
-      } catch (fallbackErr) {
-        console.error('Fallback magic link generation failed', fallbackErr);
-        if (!emailSent) {
-          showToast('Unable to prepare fallback link. Try again shortly.');
-        }
-        return null;
-      }
+      return fallback;
     };
 
     if (sendBtn) sendBtn.addEventListener('click', async (e) => {
