@@ -18,6 +18,7 @@ const SENDGRID_FROM = runtimeConfig.sendgrid?.from || 'no-reply@smarthubultra.de
 const MAGIC_LINK_EXPIRY_MS = Number(runtimeConfig.magiclinks?.ttl_ms) || (30 * 60 * 1000);
 const GUEST_TTL_MS = Number(runtimeConfig.cleanup?.guest_ttl_ms) || (48 * 60 * 60 * 1000);
 const SESSION_TTL_MS = Number(runtimeConfig.cleanup?.session_ttl_ms) || (48 * 60 * 60 * 1000);
+const PROJECT_TTL_MS = Number(runtimeConfig.cleanup?.project_ttl_ms) || (7 * 24 * 60 * 60 * 1000);
 
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
@@ -225,7 +226,7 @@ exports.cleanupAuthArtifacts = functions.region(REGION).pubsub.schedule('every 6
   const now = Date.now();
   const magicLinksRef = db.ref('magicLinks');
   const sessionsRef = db.ref('sessions');
-  const removed = { magicLinks: 0, guestUsers: 0, sessions: 0 };
+  const removed = { magicLinks: 0, guestUsers: 0, sessions: 0, projectSessions: 0 };
 
   const expiredLinksSnap = await magicLinksRef.orderByChild('expiresAt').endAt(now).get();
   if (expiredLinksSnap.exists()) {
@@ -274,11 +275,30 @@ exports.cleanupAuthArtifacts = functions.region(REGION).pubsub.schedule('every 6
     }
   }
 
+  const projectCutoff = now - PROJECT_TTL_MS;
+  const projectsRef = db.ref('projectSessions');
+  const projectsSnap = await projectsRef.get();
+  if (projectsSnap.exists()) {
+    const projectUpdates = {};
+    projectsSnap.forEach(child => {
+      const value = child.val() || {};
+      const lastAccessed = value.lastAccessed || value.createdAt || 0;
+      if (lastAccessed < projectCutoff) {
+        projectUpdates[child.key] = null;
+        removed.projectSessions += 1;
+      }
+    });
+    if (Object.keys(projectUpdates).length) {
+      await projectsRef.update(projectUpdates);
+    }
+  }
+
   await db.ref('maintenanceLogs').push({
     ranAt: now,
     removed,
     guestCutoff,
-    sessionTtl: SESSION_TTL_MS
+    sessionTtl: SESSION_TTL_MS,
+    projectTtl: PROJECT_TTL_MS
   });
 
   return removed;

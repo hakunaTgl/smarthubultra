@@ -25,6 +25,12 @@ const CORE_ACCOUNTS = [
 const GUEST_NAME_POOL = ['Nova Guest', 'Pulse Guest', 'Velocity Guest', 'Orbit Guest', 'Flux Guest'];
 const grantAdminRoleCallable = httpsCallable(functions, 'grantAdminRole');
 const INVITE_ENDPOINT = `${FUNCTIONS_BASE_URL}/sendInviteEmail`;
+const PROJECT_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const projectCodeElements = {
+  panel: null,
+  meta: null,
+  input: null
+};
 
 function sanitizeKey(email) {
   return (email || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -37,6 +43,19 @@ function makeSessionId() {
 function generateCode(digits = 6) {
   const min = 10 ** (digits - 1);
   return (Math.floor(min + Math.random() * 9 * min)).toString();
+}
+
+function generateProjectCode(length = 6) {
+  let code = '';
+  for (let i = 0; i < length; i += 1) {
+    const index = Math.floor(Math.random() * PROJECT_CODE_ALPHABET.length);
+    code += PROJECT_CODE_ALPHABET[index];
+  }
+  return code;
+}
+
+function normalizeProjectCode(raw = '') {
+  return (raw || '').toString().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
 }
 
 function pickRandom(list = []) {
@@ -275,6 +294,17 @@ async function processMagicLinkFromUrl() {
   return completeFallbackMagicLink(token);
 }
 
+async function allocateProjectCode(attempts = 5) {
+  for (let i = 0; i < attempts; i += 1) {
+    const candidate = generateProjectCode();
+    const existing = await get(dbRef(`projectSessions/${candidate}`));
+    if (!existing.exists()) {
+      return candidate;
+    }
+  }
+  throw new Error('Unable to reserve project code');
+}
+
 async function startGuestSession() {
   try {
     const handle = pickRandom(GUEST_NAME_POOL) || 'Guest';
@@ -299,6 +329,119 @@ async function startGuestSession() {
   } catch (err) {
     console.error('Guest session error', err);
     showToast('Unable to start guest session');
+  }
+}
+
+async function startProjectSession(preferredName = '') {
+  try {
+    const code = await allocateProjectCode();
+    const now = Date.now();
+    const label = preferredName?.trim() || `Project-${code}`;
+    const email = `project+${code.toLowerCase()}@projects.smarthub`;
+    const overrides = {
+      username: label,
+      role: 'creator',
+      accessTier: 'builder',
+      project: {
+        code,
+        createdAt: now,
+        label
+      }
+    };
+    const key = await ensureUserRecord(email, overrides);
+    await update(dbRef(`users/${key}`), {
+      ...overrides,
+      lastSignInMethod: 'project-code'
+    });
+    await set(dbRef(`projectSessions/${code}`), {
+      code,
+      user: key,
+      createdAt: now,
+      lastAccessed: now
+    });
+    await createSessionForUser(key, email, { method: 'project-code', code });
+    await update(dbRef(`users/${key}`), {
+      project: {
+        code,
+        createdAt: now,
+        label,
+        lastAccessed: now
+      }
+    });
+    localStorage.setItem('projectCode', code);
+    const resumeInput = document.getElementById('project-code-input');
+    if (resumeInput) {
+      resumeInput.value = code;
+    }
+    showProjectCodePanel(code, `Project session active • code ${code}`);
+    showToast(`Project session ready. Code: ${code}`);
+    logActivity('project-session:start', { code });
+    closeAllModals();
+    await startHoloGuide();
+    await loadDashboard();
+    return code;
+  } catch (err) {
+    console.error('Project session start failed', err);
+    showToast('Unable to start project session');
+    return null;
+  }
+}
+
+async function resumeProjectSession(codeRaw) {
+  const code = normalizeProjectCode(codeRaw);
+  if (!code) {
+    showToast('Enter a valid project code');
+    return false;
+  }
+  try {
+    const snap = await get(dbRef(`projectSessions/${code}`));
+    if (!snap.exists()) {
+      showToast('Project code not found');
+      return false;
+    }
+    const entry = snap.val() || {};
+    const userKey = entry.user;
+    if (!userKey) {
+      showToast('Project session is missing owner data');
+      return false;
+    }
+    const userSnap = await get(dbRef(`users/${userKey}`));
+    if (!userSnap.exists()) {
+      showToast('Project user profile missing');
+      return false;
+    }
+    const user = userSnap.val() || {};
+    const email = user.email || `project+${code.toLowerCase()}@projects.smarthub`;
+    await createSessionForUser(userKey, email, { method: 'project-code', code });
+    const now = Date.now();
+    await update(dbRef(`users/${userKey}`), {
+      lastSignInMethod: 'project-code',
+      project: {
+        ...(user.project || {}),
+        code,
+        lastAccessed: now
+      }
+    });
+    await update(dbRef(`projectSessions/${code}`), {
+      lastAccessed: now,
+      lastUserAgent: navigator.userAgent || null
+    });
+    localStorage.setItem('projectCode', code);
+    const resumeInput = document.getElementById('project-code-input');
+    if (resumeInput) {
+      resumeInput.value = code;
+    }
+    showProjectCodePanel(code, `Project session active • code ${code}`);
+    showToast('Project session restored');
+    logActivity('project-session:resume', { code });
+    closeAllModals();
+    await startHoloGuide();
+    await loadDashboard();
+    return true;
+  } catch (err) {
+    console.error('Project session resume failed', err);
+    showToast('Unable to resume project session');
+    return false;
   }
 }
 
@@ -409,55 +552,20 @@ function hideLinkPanel(panel, metaEl, inputEl) {
   inputEl.value = '';
 }
 
-// Instance code sign-in function
-async function signInWithInstanceCode(email, instanceCode) {
-  try {
-    const key = sanitizeKey(email);
-    
-    // Check if instance code exists
-    const codeSnap = await get(dbRef(`instanceCodes/${instanceCode}`));
-    if (!codeSnap.exists()) {
-      showToast('Invalid instance code');
-      return;
-    }
-    
-    const codeData = codeSnap.val();
-    if (codeData.used || (codeData.expiresAt && codeData.expiresAt < Date.now())) {
-      showToast('Instance code has expired or already been used');
-      return;
-    }
-    
-    // Create or get user
-    const userSnap = await get(dbRef(`users/${key}`));
-    if (!userSnap.exists()) {
-      const username = email.split('@')[0];
-      await ensureUserRecord(email, { username });
-    }
-    
-    // Mark code as used
-    await update(dbRef(`instanceCodes/${instanceCode}`), { used: true, usedBy: email, usedAt: Date.now() });
-    
-    // Create session
-    await createSessionForUser(key, email, { method: 'instance-code', code: instanceCode });
-    await update(dbRef(`users/${key}`), {
-      lastSignInMethod: 'instance-code',
-      lastInstanceCode: {
-        codeSuffix: instanceCode.slice(-4),
-        usedAt: Date.now(),
-        status: 'consumed',
-        issuer: codeData.createdBy || 'system'
-      }
-    });
-    
-    showToast('Successfully joined with instance code!');
-    logActivity('Signed in via instance code');
-    closeAllModals();
-    await startHoloGuide();
-    await loadDashboard();
-  } catch (err) {
-    console.error('Instance code sign-in error:', err);
-    throw err;
-  }
+function showProjectCodePanel(code, message) {
+  const { panel, meta, input } = projectCodeElements;
+  if (!panel || !meta || !input) return;
+  panel.classList.remove('hidden');
+  meta.textContent = message || 'Save this code to resume later';
+  input.value = code;
+}
+
+function hideProjectCodePanel() {
+  const { panel, meta, input } = projectCodeElements;
+  if (!panel || !meta || !input) return;
+  panel.classList.add('hidden');
+  meta.textContent = '';
+  input.value = '';
 }
 
 // Function to generate instance codes (for admin use)
@@ -515,9 +623,13 @@ export async function loadAuth() {
     const signInEmailInput = document.getElementById('sign-in-email');
     const forgotLink = document.getElementById('forgot-password');
     const sendBtn = document.getElementById('send-signin-link');
-    const instanceCodeForm = document.getElementById('instance-code-form');
-    const instanceCodeInput = document.getElementById('instance-code');
-    const codeEmailInput = document.getElementById('code-email');
+  const projectSessionBtn = document.getElementById('project-session-btn');
+  const projectCodePanelEl = document.getElementById('project-code-panel');
+  const projectCodeMeta = document.getElementById('project-code-meta');
+  const projectCodeValue = document.getElementById('project-code-value');
+  const projectCodeCopyBtn = document.getElementById('project-code-copy');
+  const projectCodeForm = document.getElementById('project-code-form');
+  const projectCodeInput = document.getElementById('project-code-input');
     const supportForm = document.getElementById('support-form');
 
     const fallbackPanel = document.getElementById('magic-link-fallback');
@@ -525,8 +637,17 @@ export async function loadAuth() {
     const fallbackLinkInput = document.getElementById('magic-link-url');
     const fallbackCopyBtn = document.getElementById('magic-link-copy');
 
-    const guestBtn = document.getElementById('guest-login-btn');
-    const adminBtn = document.getElementById('admin-fast-login-btn');
+  const guestBtn = document.getElementById('guest-login-btn');
+  const adminBtn = document.getElementById('admin-fast-login-btn');
+
+  projectCodeElements.panel = projectCodePanelEl;
+  projectCodeElements.meta = projectCodeMeta;
+  projectCodeElements.input = projectCodeValue;
+
+    const savedProjectCode = normalizeProjectCode(localStorage.getItem('projectCode') || '');
+    if (savedProjectCode) {
+      showProjectCodePanel(savedProjectCode, `Saved project code • ${savedProjectCode}`);
+    }
 
     const inviteForm = document.getElementById('invite-collab-form');
     const inviteEmailInput = document.getElementById('invite-email');
@@ -627,20 +748,32 @@ export async function loadAuth() {
       });
     }
 
-    // Instance code form handler
-    if (instanceCodeForm) {
-      instanceCodeForm.addEventListener('submit', async (e) => {
+    if (projectCodeInput) {
+      projectCodeInput.addEventListener('input', () => {
+        const caret = projectCodeInput.selectionStart;
+        projectCodeInput.value = normalizeProjectCode(projectCodeInput.value);
+        projectCodeInput.selectionStart = projectCodeInput.selectionEnd = caret;
+      });
+    }
+
+    if (projectSessionBtn) {
+      projectSessionBtn.addEventListener('click', async () => {
+        const name = window.prompt('Name your project (optional)');
+        await startProjectSession(name || '');
+      });
+    }
+
+    if (projectCodeForm) {
+      projectCodeForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const instanceCode = instanceCodeInput?.value;
-        const email = codeEmailInput?.value;
-        if (!instanceCode || !email) {
-          showToast('Please enter both email and instance code');
+        const codeValue = projectCodeInput?.value;
+        if (!codeValue) {
+          showToast('Enter a project code');
           return;
         }
-        try {
-          await signInWithInstanceCode(email, instanceCode);
-        } catch (err) {
-          showToast('Failed to join with instance code');
+        const success = await resumeProjectSession(codeValue);
+        if (!success) {
+          logActivity('project-session:resume-failed', { code: codeValue });
         }
       });
     }
@@ -659,6 +792,17 @@ export async function loadAuth() {
         const value = fallbackLinkInput?.value;
         if (!value) {
           showToast('Generate a link first');
+          return;
+        }
+        await copyToClipboardSafe(value);
+      });
+    }
+
+    if (projectCodeCopyBtn) {
+      projectCodeCopyBtn.addEventListener('click', async () => {
+        const value = projectCodeValue?.value;
+        if (!value) {
+          showToast('Start a project session first');
           return;
         }
         await copyToClipboardSafe(value);

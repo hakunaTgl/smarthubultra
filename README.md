@@ -8,6 +8,8 @@ This repository contains a mostly client-side app (HTML + JS) that uses Firebase
 - PWA-ready: `manifest.json` + `sw.js` included
 - Modular JS in `js/` (auth, bots, dashboard, collab, etc.)
 - CLI entry `cli.js` for simple scripts and automation
+- Code-first access: start instantly with a generated project code, resume later without email friction
+- Immersive UI shell: refreshed nebula theming, adaptive dashboards, and pill-based navigation for a premium experience
 
 ## Quick start (developer)
 1. Install Node.js (LTS) and npm.
@@ -62,14 +64,15 @@ Transactional invites, secure admin claims, and scheduled cleanup now live in Fi
     sendgrid.api_key="SG.your-key" \
     sendgrid.from="no-reply@smarthubultra.dev" \
     app.signin_url="https://smarthubultra.web.app" \
-    cleanup.guest_ttl_ms="172800000" \
-    cleanup.session_ttl_ms="172800000"
+     cleanup.guest_ttl_ms="172800000" \
+     cleanup.session_ttl_ms="172800000" \
+     cleanup.project_ttl_ms="604800000"
   ```
 
   - `admin.manual_secret` must match the override code admins type client-side.
   - Omit the SendGrid keys to rely on manual invite links only.
   - `app.signin_url` is the base page appended to all generated magic links.
-  - Cleanup TTLs (ms) control how long guest accounts and sessions persist.
+  - Cleanup TTLs (ms) control how long guest accounts, project codes, and sessions persist.
 
 3. **Deploy or run locally**
 
