@@ -1,7 +1,7 @@
  import { showToast, speak, logActivity, closeAllModals } from './utils.js';
 import { loadDashboard } from './dashboard.js';
 import { startHoloGuide } from './holoGuide.js';
-import { dbRef, set, get, update, auth } from './firebaseConfig.js';
+import { dbRef, set, get, update, auth, functions, httpsCallable, FUNCTIONS_BASE_URL } from './firebaseConfig.js';
 import { sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
 
 const MAGIC_LINK_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
@@ -23,6 +23,8 @@ const CORE_ACCOUNTS = [
   }
 ];
 const GUEST_NAME_POOL = ['Nova Guest', 'Pulse Guest', 'Velocity Guest', 'Orbit Guest', 'Flux Guest'];
+const grantAdminRoleCallable = httpsCallable(functions, 'grantAdminRole');
+const INVITE_ENDPOINT = `${FUNCTIONS_BASE_URL}/sendInviteEmail`;
 
 function sanitizeKey(email) {
   return (email || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -66,7 +68,7 @@ async function createSessionForUser(userKey, email, extra = {}) {
     if (userSnap.exists()) {
       const user = userSnap.val();
       const sessions = (user.sessions || 0) + 1;
-      await update(dbRef(`users/${userKey}`), { sessions });
+      await update(dbRef(`users/${userKey}`), { sessions, lastSessionAt: Date.now() });
       await set(dbRef(`billing/${userKey}/${sessionId}`), { sessionId, amount: 0, timestamp: Date.now() });
     }
   } catch (e) {
@@ -300,13 +302,44 @@ async function startGuestSession() {
   }
 }
 
+async function grantAdminClaims(targetEmail, overrideCode) {
+  if (!auth.currentUser) {
+    showToast('Complete a Firebase sign-in before requesting admin access');
+    return false;
+  }
+  const normalized = (targetEmail || '').toLowerCase();
+  const currentEmail = (auth.currentUser.email || '').toLowerCase();
+  if (normalized && currentEmail !== normalized) {
+    showToast('Sign in with the admin email first, then re-run the override');
+    return false;
+  }
+  try {
+    const response = await grantAdminRoleCallable({ targetEmail: normalized, overrideCode });
+    await auth.currentUser.getIdToken(true);
+    logActivity('admin-claims:granted', { email: normalized });
+    return response?.data || response;
+  } catch (err) {
+    console.error('grantAdminClaims failed', err);
+    const code = err?.code || '';
+    if (code.includes('permission-denied')) {
+      showToast('Admin verification rejected');
+    } else if (code.includes('unauthenticated')) {
+      showToast('Sign in again before requesting admin access');
+    } else {
+      showToast('Admin elevation failed');
+    }
+    return false;
+  }
+}
+
 async function fastLoginAsAdmin() {
   const code = window.prompt('Enter executive override code');
   if (!code) {
     showToast('Override cancelled');
     return;
   }
-  if (code.trim() !== ADMIN_FASTPASS_CODE) {
+  const trimmed = code.trim();
+  if (trimmed !== ADMIN_FASTPASS_CODE) {
     showToast('Invalid executive override code');
     return;
   }
@@ -323,7 +356,20 @@ async function fastLoginAsAdmin() {
     accessTier: 'executive',
     badges: ['admin']
   };
+  const currentEmail = (auth.currentUser?.email || '').toLowerCase();
+  if (!currentEmail) {
+    showToast('Sign in with a magic link before using the override');
+    return;
+  }
+  if (currentEmail !== profile.email.toLowerCase()) {
+    showToast('Admin override requires signing in with that admin address first');
+    return;
+  }
   try {
+    const claims = await grantAdminClaims(profile.email, trimmed);
+    if (!claims) {
+      return;
+    }
     const key = await ensureUserRecord(profile.email, {
       username: profile.username,
       role: profile.role,
@@ -427,6 +473,37 @@ export async function generateInstanceCode(expirationHours = 24) {
   });
   
   return code;
+}
+
+async function sendTransactionalInvite(email, role) {
+  if (!auth.currentUser) {
+    throw new Error('Sign in before sending invites');
+  }
+  const idToken = await auth.currentUser.getIdToken();
+  const response = await fetch(INVITE_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`
+    },
+    body: JSON.stringify({
+      email,
+      role,
+      baseUrl: window.location.origin + window.location.pathname
+    })
+  });
+  const raw = await response.text();
+  let data = {};
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch (err) {
+    console.warn('Invite response parsing failed', err);
+  }
+  if (!response.ok) {
+    const message = data?.error || response.statusText || 'Invite send failed';
+    throw new Error(message);
+  }
+  return data;
 }
 
 export async function loadAuth() {
@@ -615,10 +692,41 @@ export async function loadAuth() {
             overrides.username = `Guest-${email.split('@')[0]}`;
           }
           await ensureUserRecord(email, overrides);
-          const fallback = await generateFallbackMagicLink(email, { overrides, method: 'invite-link' });
-          updateLinkPanel(invitePanel, inviteMeta, inviteLinkInput, email, fallback.url, fallback.expiresAt, 'Invite link');
-          showToast('Invite link ready to share');
-          logActivity('Generated invite link', { email, role });
+          let linkDetails = null;
+          try {
+            const result = await sendTransactionalInvite(email, role);
+            linkDetails = {
+              url: result?.inviteLink,
+              expiresAt: result?.expiresAt,
+              delivered: !!result?.delivered,
+              source: 'cloud-function'
+            };
+            showToast(result?.delivered ? 'Invite email dispatched' : 'Invite link ready to share');
+            logActivity('Generated invite link', { email, role, delivered: !!result?.delivered });
+          } catch (inviteErr) {
+            console.error('Transactional invite failed', inviteErr);
+            const fallback = await generateFallbackMagicLink(email, { overrides, method: 'invite-link' });
+            linkDetails = {
+              url: fallback?.url,
+              expiresAt: fallback?.expiresAt,
+              delivered: false,
+              source: 'fallback'
+            };
+            showToast('Invite email failed — manual link ready below');
+            logActivity('Generated invite link', { email, role, delivered: false, fallback: true });
+          }
+          if (!linkDetails?.url) {
+            const fallback = await generateFallbackMagicLink(email, { overrides, method: 'invite-link' });
+            linkDetails = {
+              url: fallback?.url,
+              expiresAt: fallback?.expiresAt,
+              delivered: false,
+              source: 'fallback-empty'
+            };
+          }
+          if (linkDetails?.url) {
+            updateLinkPanel(invitePanel, inviteMeta, inviteLinkInput, email, linkDetails.url, linkDetails.expiresAt, 'Invite link');
+          }
         } catch (err) {
           console.error('Invite generation failed', err);
           showToast('Failed to generate invite link');

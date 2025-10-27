@@ -43,6 +43,50 @@ npm run format  # run Prettier to format files
 npm run clean   # remove build artifacts
 ```
 
+## Cloud Functions (Admin + Maintenance)
+Transactional invites, secure admin claims, and scheduled cleanup now live in Firebase Functions.
+
+1. **Install backend dependencies**
+
+  ```bash
+  cd functions
+  npm install
+  cd ..
+  ```
+
+2. **Configure runtime secrets** (adjust values for your project):
+
+  ```bash
+  firebase functions:config:set \
+    admin.manual_secret="SMARTHUB-EXEC-2025" \
+    sendgrid.api_key="SG.your-key" \
+    sendgrid.from="no-reply@smarthubultra.dev" \
+    app.signin_url="https://smarthubultra.web.app" \
+    cleanup.guest_ttl_ms="172800000" \
+    cleanup.session_ttl_ms="172800000"
+  ```
+
+  - `admin.manual_secret` must match the override code admins type client-side.
+  - Omit the SendGrid keys to rely on manual invite links only.
+  - `app.signin_url` is the base page appended to all generated magic links.
+  - Cleanup TTLs (ms) control how long guest accounts and sessions persist.
+
+3. **Deploy or run locally**
+
+  ```bash
+  firebase deploy --only functions
+  # or
+  firebase emulators:start --only functions
+  ```
+
+4. **Optional client override** — set a custom Functions base URL (non-default regions, staging environments, etc.).
+
+  ```html
+  <script>window.SMART_HUB_FUNCTIONS_URL = 'https://us-central1-your-project.cloudfunctions.net';</script>
+  ```
+
+  When left unset, the app defaults to `https://us-central1-${projectId}.cloudfunctions.net`.
+
 ## Example: create or inspect the demo bot
 An example bot template is included at `bots/exampleBot.json`. Use it as a starting point for bot creation or tests.
 
