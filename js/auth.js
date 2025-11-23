@@ -1,22 +1,10 @@
 import { showToast, speak, logActivity, closeAllModals } from './utils.js';
 import { loadDashboard } from './dashboard.js';
 import { startHoloGuide } from './holoGuide.js';
-import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { getDatabase, ref, set, get } from 'firebase/database';
+import { app } from './firebaseConfig.js';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAPPllpKiFOcjqxnuk2tRvithFYKSzkQAc",
-  authDomain: "smarthubultra.firebaseapp.com",
-  databaseURL: "https://smarthubultra-default-rtdb.firebaseio.com",
-  projectId: "smarthubultra",
-  storageBucket: "smarthubultra.firebasestorage.app",
-  messagingSenderId: "12039705608",
-  appId: "1:12039705608:web:f1a4383b245275eaa26dbd",
-  measurementId: "G-V24P3DHL9M"
-};
-
-const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
 

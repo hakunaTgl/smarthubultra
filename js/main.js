@@ -1,20 +1,6 @@
-import { initializeApp } from 'firebase/app';
-import { getAnalytics, logEvent } from 'firebase/analytics';
+import { logEvent } from 'firebase/analytics';
 import { showToast } from './utils.js';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAPPllpKiFOcjqxnuk2tRvithFYKSzkQAc",
-  authDomain: "smarthubultra.firebaseapp.com",
-  databaseURL: "https://smarthubultra-default-rtdb.firebaseio.com",
-  projectId: "smarthubultra",
-  storageBucket: "smarthubultra.firebasestorage.app",
-  messagingSenderId: "12039705608",
-  appId: "1:12039705608:web:f1a4383b245275eaa26dbd",
-  measurementId: "G-V24P3DHL9M"
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+import { app, analytics } from './firebaseConfig.js';
 
 async function init() {
   try {
