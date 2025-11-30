@@ -1,5 +1,5 @@
 import { showToast, speak, logActivity } from './utils.js';
-import { createBotFromText } from './bots.js';
+import { createBotFromText } from '../bots.html';
 
 export async function loadVoiceCommand() {
   try {

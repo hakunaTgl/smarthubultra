@@ -1,5 +1,5 @@
 import { showToast, speak, logActivity } from './utils.js';
-import { runBot, deleteBot } from './bots.js';
+import { runBot, deleteBot } from '../bots.html';
 import { validateBotBehavior } from './behavioralDNA.js';
 import { IDB } from './utils.js';
 

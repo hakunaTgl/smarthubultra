@@ -1,5 +1,5 @@
 import { showToast, speak, logActivity, closeAllModals } from './utils.js';
-import { loadDashboard } from './dashboard.js';
+import { loadDashboard } from '../dashboard.html';
 import { startHoloGuide } from './holoGuide.js';
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';

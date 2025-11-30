@@ -165,11 +165,11 @@ auth.js: Manages user authentication and support tickets.
 
 
 
-bots.js: Handles bot creation, templates, and marketplace.
+bots.html: Handles bot creation, templates, and marketplace.
 
 
 
-dashboard.js: Loads dashboard widgets and insights.
+dashboard.html: Loads dashboard widgets and insights.
 
 
 

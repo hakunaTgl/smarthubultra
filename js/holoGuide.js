@@ -1,5 +1,5 @@
 import { showToast, speak, logActivity } from './utils.js';
-import { loadBotsPage } from './bots.js';
+import { loadBotsPage } from '../bots.html';
 
 export async function startHoloGuide() {
   try {
