@@ -7,9 +7,7 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <script type="module">
-    import { app, analytics } from './firebaseConfig.js';
-    void app;
-    void analytics;
+    import './firebaseConfig.js';
   </script>
 </head>
 <body>
