@@ -10,7 +10,7 @@ const firebaseConfig = {
   authDomain: "smarthubultra.firebaseapp.com",
   databaseURL: "https://smarthubultra-default-rtdb.firebaseio.com",
   projectId: "smarthubultra",
-  storageBucket: "smarthubultra.firebasestorage.app",
+  storageBucket: "smarthubultra.appspot.com",
   messagingSenderId: "12039705608",
   appId: "1:12039705608:web:f1a4383b245275eaa26dbd",
   measurementId: "G-V24P3DHL9M"
