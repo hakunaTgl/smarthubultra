@@ -1,6 +1,6 @@
 import { logEvent } from 'firebase/analytics';
 import { showToast } from './utils.js';
-import { app, analytics } from './firebaseConfig.js';
+import { analytics } from './firebaseConfig.js';
 
 async function init() {
   try {
