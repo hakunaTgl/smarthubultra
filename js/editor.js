@@ -1,6 +1,10 @@
 import { IDB, showToast, speak, logActivity } from './utils.js';
 import { generateBehavioralDNA, validateBotBehavior } from './behavioralDNA.js';
 import { setupCollaborativeMode } from './collab.js';
+import { getDatabase, ref, set } from 'firebase/database';
+import { app } from './config.js';
+
+const database = getDatabase(app);
 
 export async function loadEditor() {
   try {
@@ -30,13 +34,13 @@ export async function loadEditor() {
         creator: localStorage.getItem('currentUser')
       };
       await IDB.batchSet('versions', [version]);
-      firebase.database().ref('versions/' + bot.id + '/' + version.timestamp).set(version);
+      await set(ref(database, 'versions/' + bot.id + '/' + version.timestamp), version);
       bot.code = code;
       const dna = generateBehavioralDNA(bot.purpose, bot.code);
       await IDB.batchSet('bots', [bot]);
       await IDB.batchSet('behavioral_dna', [dna]);
-      firebase.database().ref('bots/' + bot.id).set(bot);
-      firebase.database().ref('behavioral_dna/' + dna.botId).set(dna);
+      await set(ref(database, 'bots/' + bot.id), bot);
+      await set(ref(database, 'behavioral_dna/' + dna.botId), dna);
       await setupCollaborativeMode(bot);
       showToast('Version saved!');
       logActivity(`Saved version for bot: ${bot.name}`);

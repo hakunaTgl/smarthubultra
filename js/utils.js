@@ -1,3 +1,8 @@
+import { getDatabase, ref, set } from 'firebase/database';
+import { app } from './config.js';
+
+const database = getDatabase(app);
+
 export function showToast(message) {
   const toast = document.createElement('div');
   toast.className = 'toast';
@@ -26,7 +31,7 @@ export function logActivity(action) {
     timestamp: Date.now()
   };
   IDB.batchSet('tracking', [log]);
-  firebase.database().ref('tracking/' + log.id).set(log);
+  set(ref(database, 'tracking/' + log.id), log);
 }
 
 export const IDB = {

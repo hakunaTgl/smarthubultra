@@ -1,5 +1,9 @@
 import { IDB, showToast, speak, logActivity, closeAllModals } from './utils.js';
 import { setupTelegramNotifications } from './notifications.js';
+import { getDatabase, ref, update } from 'firebase/database';
+import { app } from './config.js';
+
+const database = getDatabase(app);
 
 export async function loadAccount() {
   try {
@@ -18,7 +22,7 @@ export async function loadAccount() {
       document.getElementById('profile-pic').src = url;
       user.profilePic = url;
       await IDB.batchSet('users', [user]);
-      firebase.database().ref('users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')).update({ profilePic: url });
+      await update(ref(database, 'users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')), { profilePic: url });
       showToast('Profile picture updated');
       logActivity('Updated profile picture');
     });
@@ -36,7 +40,7 @@ export async function loadAccount() {
       user.fourDigit = fourDigit;
       user.passwordChanges.push({ oldPassword: user.password, newPassword, timestamp: Date.now() });
       await IDB.batchSet('users', [user]);
-      firebase.database().ref('users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')).update(user);
+      await update(ref(database, 'users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')), user);
       showToast('Credentials updated');
       logActivity('Updated account credentials');
     });
@@ -47,7 +51,7 @@ export async function loadAccount() {
       document.getElementById('telegram-chat-id').value = chatId;
       user.telegramChatId = chatId;
       await IDB.batchSet('users', [user]);
-      firebase.database().ref('users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')).update({ telegramChatId: chatId });
+      await update(ref(database, 'users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')), { telegramChatId: chatId });
       showToast('Telegram Chat ID fetched');
       logActivity('Fetched Telegram Chat ID');
     });
@@ -59,7 +63,7 @@ export async function loadAccount() {
       document.body.style.background = theme.image ? `url(${theme.image})` : theme.color;
       user.theme = theme;
       await IDB.batchSet('users', [user]);
-      firebase.database().ref('users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')).update({ theme });
+      await update(ref(database, 'users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')), { theme });
       showToast('Theme applied');
       logActivity('Applied custom theme');
     });
@@ -80,7 +84,7 @@ export async function loadAccount() {
     document.getElementById('enable-narration').addEventListener('change', e => {
       user.narration = e.target.checked;
       IDB.batchSet('users', [user]);
-      firebase.database().ref('users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')).update({ narration: e.target.checked });
+      update(ref(database, 'users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')), { narration: e.target.checked });
       showToast(`AI narration ${e.target.checked ? 'enabled' : 'disabled'}`);
     });
 
@@ -93,7 +97,7 @@ export async function loadAccount() {
     document.getElementById('ar-mode').addEventListener('change', e => {
       user.arMode = e.target.checked;
       IDB.batchSet('users', [user]);
-      firebase.database().ref('users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')).update({ arMode: e.target.checked });
+      update(ref(database, 'users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')), { arMode: e.target.checked });
       showToast(`AR mode ${e.target.checked ? 'enabled' : 'disabled'}`);
     });
 

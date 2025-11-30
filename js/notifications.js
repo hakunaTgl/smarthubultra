@@ -1,4 +1,8 @@
 import { IDB, showToast, speak, logActivity } from './utils.js';
+import { getDatabase, ref, onChildAdded } from 'firebase/database';
+import { app } from './config.js';
+
+const database = getDatabase(app);
 
 export async function loadNotifications() {
   try {
@@ -17,7 +21,7 @@ export async function loadNotifications() {
       document.getElementById('notification-dropdown').classList.toggle('hidden');
     });
 
-    firebase.database().ref('notifications').on('child_added', async snapshot => {
+    onChildAdded(ref(database, 'notifications'), async snapshot => {
       const notification = snapshot.val();
       notificationList.insertAdjacentHTML('afterbegin', `<div><p>${notification.message} (${new Date(notification.timestamp).toLocaleString()})</p></div>`);
       document.getElementById('notification-count').textContent = (await IDB.getAll('notifications')).length + 1;

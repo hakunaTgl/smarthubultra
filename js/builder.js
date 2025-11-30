@@ -1,6 +1,10 @@
 import { IDB, showToast, speak, logActivity } from './utils.js';
 import { generateBehavioralDNA } from './behavioralDNA.js';
 import { setupCollaborativeMode } from './collab.js';
+import { getDatabase, ref, set } from 'firebase/database';
+import { app } from './config.js';
+
+const database = getDatabase(app);
 
 export function setupBotBuilder() {
   try {
@@ -46,8 +50,8 @@ export function setupBotBuilder() {
       const dna = generateBehavioralDNA(bot.purpose, bot.code);
       await IDB.batchSet('bots', [bot]);
       await IDB.batchSet('behavioral_dna', [dna]);
-      firebase.database().ref('bots/' + bot.id).set(bot);
-      firebase.database().ref('behavioral_dna/' + dna.botId).set(dna);
+      await set(ref(database, 'bots/' + bot.id), bot);
+      await set(ref(database, 'behavioral_dna/' + dna.botId), dna);
       await setupCollaborativeMode(bot);
       showToast(`Bot ${bot.name} built successfully!`);
       logActivity(`Built bot: ${bot.name}`);

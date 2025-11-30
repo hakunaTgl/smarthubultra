@@ -1,4 +1,8 @@
 import { IDB, showToast, speak, logActivity } from './utils.js';
+import { getDatabase, ref, set, update, onValue, onChildAdded } from 'firebase/database';
+import { app } from './config.js';
+
+const database = getDatabase(app);
 
 export async function loadCollabHub() {
   try {
@@ -17,14 +21,14 @@ export async function loadCollabHub() {
       bot.collaborators = bot.collaborators || [];
       bot.collaborators.push(email);
       await IDB.batchSet('bots', [bot]);
-      firebase.database().ref('bots/' + bot.id).update({ collaborators: bot.collaborators });
+      await update(ref(database, 'bots/' + bot.id), { collaborators: bot.collaborators });
       showToast(`Invited ${email} to collaborate`);
       logActivity(`Invited ${email} to collaborate on bot: ${bot.name}`);
     });
 
     const editor = document.getElementById('collab-editor');
     editor.value = JSON.parse(localStorage.getItem('editingBot') || '{}').code || '';
-    firebase.database().ref('collab/' + localStorage.getItem('currentUser')).on('value', snapshot => {
+    onValue(ref(database, 'collab/' + localStorage.getItem('currentUser')), snapshot => {
       const data = snapshot.val();
       if (data && data.code !== editor.value) {
         editor.value = data.code;
@@ -40,12 +44,12 @@ export async function loadCollabHub() {
         message,
         timestamp: Date.now()
       };
-      firebase.database().ref('chat/' + Date.now()).set(chat);
+      set(ref(database, 'chat/' + Date.now()), chat);
       document.getElementById('chat-input').value = '';
       logActivity(`Sent chat message: ${message}`);
     });
 
-    firebase.database().ref('chat').on('child_added', snapshot => {
+    onChildAdded(ref(database, 'chat'), snapshot => {
       const chat = snapshot.val();
       const messages = document.getElementById('chat-messages');
       const div = document.createElement('div');
@@ -65,9 +69,9 @@ export async function loadCollabHub() {
 
 export async function setupCollaborativeMode(bot) {
   try {
-    firebase.database().ref('collab/' + bot.creator).set({ code: bot.code });
+    await set(ref(database, 'collab/' + bot.creator), { code: bot.code });
     bot.collaborators?.forEach(collab => {
-      firebase.database().ref('collab/' + collab).set({ code: bot.code });
+      set(ref(database, 'collab/' + collab), { code: bot.code });
     });
   } catch (error) {
     showToast(`Failed to setup collaborative mode: ${error.message}`);

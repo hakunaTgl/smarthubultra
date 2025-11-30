@@ -1,4 +1,8 @@
 import { IDB, showToast, speak, logActivity } from './utils.js';
+import { getDatabase, ref, set } from 'firebase/database';
+import { app } from './config.js';
+
+const database = getDatabase(app);
 
 export async function loadBossView() {
   try {
@@ -53,7 +57,7 @@ export async function loadBossView() {
         timestamp: Date.now()
       };
       await IDB.batchSet('notifications', [notification]);
-      firebase.database().ref('notifications/' + notification.id).set(notification);
+      await set(ref(database, 'notifications/' + notification.id), notification);
       showToast('Announcement broadcasted');
       logActivity(`Broadcasted announcement: ${message}`);
     });
