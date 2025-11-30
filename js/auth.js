@@ -1,5 +1,6 @@
  import { showToast, speak, logActivity, closeAllModals } from './utils.js';
 import { loadDashboard } from './dashboard.js';
+import { connectO7 } from './o7integration.js';
 import { startHoloGuide } from './holoGuide.js';
 import { dbRef, set, get, update, auth, functions, httpsCallable, FUNCTIONS_BASE_URL } from './firebaseConfig.js';
 import { sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';

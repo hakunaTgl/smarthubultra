@@ -87,6 +87,9 @@ async function openDB() {
       if (!db.objectStoreNames.contains('notifications')) {
         db.createObjectStore('notifications', { keyPath: 'id' });
       }
+      if (!db.objectStoreNames.contains('rooms')) {
+        db.createObjectStore('rooms', { keyPath: 'id' });
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);

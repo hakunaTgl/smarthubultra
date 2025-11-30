@@ -34,8 +34,8 @@ export async function loadBossView() {
     renderDnaOverview(dom.dnaOverview, dnaIndex, users);
     renderDnaTimeline(dom.dnaTimeline, dnaIndex, users);
     renderGrowthSignals(dom.dnaGrowth, dnaIndex);
-  wireSearch(dom);
-  wireDnaExport(dom);
+    wireSearch(dom);
+    wireDnaExport(dom);
     wireBroadcast(dom.broadcastBtn, dom.announcementInput);
 
     showToast('Boss intelligence center ready');
@@ -240,7 +240,7 @@ function renderSupportTickets(container, tickets = []) {
     container.innerHTML = '<p class="empty-state">No support tickets open.</p>';
     return;
   }
-    container.innerHTML = tickets
+  container.innerHTML = tickets
     .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
     .slice(0, 6)
     .map(ticket => `
@@ -248,7 +248,7 @@ function renderSupportTickets(container, tickets = []) {
         <header>
           <div>
             <strong>${ticket.email}</strong>
-              <span class="boss-entity-meta">${formatTimestamp(ticket.timestamp || Date.now())}</span>
+            <span class="boss-entity-meta">${formatTimestamp(ticket.timestamp || Date.now())}</span>
           </div>
           <span class="boss-pill">${ticket.status || 'open'}</span>
         </header>

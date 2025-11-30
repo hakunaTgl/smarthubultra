@@ -190,6 +190,8 @@ Mobile Accessibility: Runs as a PWA on Android with swipe gestures and offline s
 
 
 Innovative Tools: Holographic guide, AR control mode, voice commands, and meme-driven inspiration.
+Multi-User Rooms: Create or join project rooms for collaborative development.
+O7 Integration: Optional module to connect with the O7 service.
 
 Prerequisites
 
