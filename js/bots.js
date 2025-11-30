@@ -44,5 +44,7 @@ export async function deleteBot(id) {
   logActivity(`Deleted bot ${id}`);
 }
 
-// Automatically populate templates when this script loads
-populateBotTemplates();
+// Populate templates only after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  populateBotTemplates();
+});
