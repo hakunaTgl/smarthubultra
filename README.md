@@ -1,3 +1,160 @@
+# Smart Hub Ultra
+
+Smart Hub Ultra is a Progressive Web App (PWA) for creating, managing, and testing AI bots. It combines an approachable UI, offline support, and advanced features like Behavioral DNA mapping, real-time collaboration, and AR/voice interaction modes.
+
+This repository contains a mostly client-side app (HTML + JS) that uses Firebase for backend services. The project already includes pages, a service worker, and numerous feature modules under `js/`.
+
+## Quick highlights
+- PWA-ready: `manifest.json` + `sw.js` included
+- Modular JS in `js/` (auth, bots, dashboard, collab, etc.)
+- CLI entry `cli.js` for simple scripts and automation
+- Code-first access: start instantly with a generated project code, resume later without email friction
+- Immersive UI shell: refreshed nebula theming, adaptive dashboards, and pill-based navigation for a premium experience
+
+## Quick start (developer)
+1. Install Node.js (LTS) and npm.
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Run dev server (Parcel):
+
+```bash
+npm run dev
+```
+
+4. Build for production:
+
+```bash
+npm run build
+```
+
+5. Preview the built site:
+
+```bash
+npm run preview
+```
+
+6. Useful commands
+
+```bash
+npm run lint    # run ESLint (non-fatal)
+npm run format  # run Prettier to format files
+npm run clean   # remove build artifacts
+```
+
+## Cloud Functions (Admin + Maintenance)
+Transactional invites, secure admin claims, and scheduled cleanup now live in Firebase Functions.
+
+1. **Install backend dependencies**
+
+  ```bash
+  cd functions
+  npm install
+  cd ..
+  ```
+
+2. **Configure runtime secrets** (adjust values for your project):
+
+  ```bash
+  firebase functions:config:set \
+    admin.manual_secret="SMARTHUB-EXEC-2025" \
+    sendgrid.api_key="SG.your-key" \
+    sendgrid.from="no-reply@smarthubultra.dev" \
+    app.signin_url="https://smarthubultra.web.app" \
+     cleanup.guest_ttl_ms="172800000" \
+     cleanup.session_ttl_ms="172800000" \
+     cleanup.project_ttl_ms="604800000"
+  ```
+
+  - `admin.manual_secret` must match the override code admins type client-side.
+  - Omit the SendGrid keys to rely on manual invite links only.
+  - `app.signin_url` is the base page appended to all generated magic links.
+  - Cleanup TTLs (ms) control how long guest accounts, project codes, and sessions persist.
+
+3. **Deploy or run locally**
+
+  ```bash
+  firebase deploy --only functions
+  # or
+  firebase emulators:start --only functions
+  ```
+
+4. **Optional client override** — set a custom Functions base URL (non-default regions, staging environments, etc.).
+
+  ```html
+  <script>window.SMART_HUB_FUNCTIONS_URL = 'https://us-central1-your-project.cloudfunctions.net';</script>
+  ```
+
+  When left unset, the app defaults to `https://us-central1-${projectId}.cloudfunctions.net`.
+
+## Example: create or inspect the demo bot
+An example bot template is included at `bots/exampleBot.json`. Use it as a starting point for bot creation or tests.
+
+## Project structure (selected)
+- `index.html` – main entry page
+- `js/` – app modules (auth.js, main.js, bots.js, etc.)
+- `bots/` – bot data/blueprints (added example)
+- `cli.js` – CLI helper
+- `manifest.json`, `sw.js` – PWA support
+
+## Development notes and next improvements
+- Convert modules in `js/` to ES module imports and a single `src/` entry to enable modern bundlers (optional).
+- Add unit tests for core modules (bots, behavioralDNA) and a CI workflow (already added).
+- Add integration tests or Playwright for end-to-end flows (signup, bot creation).
+
+## New features added in this iteration
+- Firebase compatibility shim (`js/firebase-compat.js`) to provide legacy `window.firebase` behavior while migrating to the modular SDK.
+- Central modular Firebase config: `js/firebaseConfig.js`.
+- Vibe Quiz: a simple psychometric-like quiz at the top of the auth page (module: `js/vibeQuiz.js`) that writes into `behavioral_dna/`.
+- Plugin scaffold: `plugins/analytics/` (dashboard stub + README).
+- UX polish: dark mode toggle and basic voice command toggle (emits `voice-command` events).
+- Audit tooling: `scripts/audit.js` produces `audit-report.md` and CI uploads it automatically.
+- Simulation harness: `scripts/simulateSessions.js` — run locally to simulate session timings.
+
+## How to try the new pieces locally
+- Run the dev server and open the app. Complete the Vibe Quiz on the landing/auth page.
+
+```bash
+npm install
+npm run dev
+```
+
+- Run audit locally:
+
+```bash
+node scripts/audit.js
+# opens/writes audit-report.md
+```
+
+- Run the local simulation (quick):
+
+```bash
+node scripts/simulateSessions.js 1000 50
+# simulate 1000 sessions with concurrency 50
+```
+
+## Vision: digital twins and next steps
+This branch of changes is the first step toward pivoting Smart Hub Ultra into a digital-twin platform: users spawn agents that reflect their vibe, preferences, and data. Next steps:
+- Build a more thorough Vibe Quiz with validated psychometric items and map scores to richer Behavioral DNA.
+- Design the Hybrid Memory Core: short-term in-memory cache, mid-term local IndexedDB, long-term vector embeddings (e.g., Pinecone/FAISS) and a graph DB for context graphs.
+- Add a pluggable-brain API so users can choose OpenAI, Llama, Claude, or on-prem models by plugin.
+- Add a richer plugin marketplace and dashboard system.
+
+
+## Contributing
+1. Fork the repo.
+2. Create a feature branch.
+3. Run `npm install`, implement changes, run `npm run lint` and `npm run format`.
+4. Open a PR with a clear description and a screenshot/gif if UI changed.
+
+## License
+MIT — see the `LICENSE` file.
+
+----
+Small additions in this commit: basic lint/format scripts, CI workflow, an example bot template, and editor configs to make the project easier to work with and more attractive to contributors.
 Smart Hub Ultra
 
 Smart Hub Ultra is a Progressive Web App (PWA) for creating, managing, and testing AI bots. It features a responsive interface optimized for Android devices, real-time collaboration, bot templates, and advanced oversight with Behavioral DNA Mapping to ensure bots stay on track. This project uses Firebase for backend services and IndexedDB for local storage, making it accessible online and offline.
@@ -143,6 +300,17 @@ Deploy to a hosting service like Firebase Hosting or Netlify:
 
 firebase deploy
 
+Command-Line Interface
+----------------------
+Use the CLI to create bot blueprints or run Node.js tasks.
+
+```
+npm run cli init-bot myBot
+npm run cli run-task ./scripts/sampleTask.js
+```
+
+This will create `bots/myBot.json` with a basic structure or execute the specified script.
+
 File Structure
 
 
@@ -160,6 +328,7 @@ js/:
 
 
 main.js: Initializes Firebase, Service Worker, and app navigation.
+bots.html and dashboard.html provide pages for bot management and the dashboard.
 
 
 

@@ -1,3 +1,5 @@
+import { dbRef, set as dbSet } from './firebaseConfig.js';
+
 export function showToast(message) {
   const toast = document.createElement('div');
   toast.className = 'toast';
@@ -18,15 +20,20 @@ export function closeAllModals() {
   document.querySelectorAll('.modal').forEach(modal => modal.classList.add('hidden'));
 }
 
-export function logActivity(action) {
+export function logActivity(action, meta = {}) {
   const log = {
     id: Date.now().toString(),
     user: localStorage.getItem('currentUser'),
     action,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    ...meta
   };
-  IDB.batchSet('tracking', [log]);
-  firebase.database().ref('tracking/' + log.id).set(log);
+  IDB.batchSet('tracking', [log]).catch(err => console.warn('Failed to persist local activity log', err));
+  try {
+    dbSet(dbRef(`tracking/${log.id}`), log).catch(err => console.warn('Failed to sync activity log', err));
+  } catch (err) {
+    console.warn('Activity sync not available', err);
+  }
 }
 
 export const IDB = {

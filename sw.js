@@ -2,6 +2,8 @@ const CACHE_NAME = 'smarthubultra-v1';
 const urlsToCache = [
   '/',
   '/index.html',
+  '/dashboard.html',
+  '/bots.html',
   '/css/style.css',
   '/manifest.json',
   '/js/main.js',
