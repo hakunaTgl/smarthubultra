@@ -1,6 +1,4 @@
 import { showToast, speak, logActivity, closeAllModals } from './utils.js';
-import { loadDashboard } from './dashboard.js';
-import { startHoloGuide } from './holoGuide.js';
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { getDatabase, ref, set, get } from 'firebase/database';
@@ -22,7 +20,7 @@ const database = getDatabase(app);
 
 export async function loadAuth() {
   try {
-    document.getElementById('auth-modal').classList.remove('hidden');
+    document.getElementById('auth-page').classList.remove('hidden');
 
     document.getElementById('sign-up-form').addEventListener('submit', async e => {
       e.preventDefault();
@@ -53,8 +51,6 @@ export async function loadAuth() {
         showToast('Sign-up successful! Welcome to Smart Hub Ultra.');
         logActivity('User signed up');
         closeAllModals();
-        await startHoloGuide();
-        await loadDashboard();
       } catch (error) {
         if (error.code === 'auth/email-already-in-use') {
           showToast('Email already in use');
@@ -81,7 +77,6 @@ export async function loadAuth() {
         showToast('Sign-in successful!');
         logActivity('User signed in');
         closeAllModals();
-        await loadDashboard();
       } catch (error) {
         if (error.code === 'auth/wrong-password') {
           showToast('Invalid Password');

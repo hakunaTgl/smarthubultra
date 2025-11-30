@@ -1,9 +1,14 @@
 import { showToast, speak, logActivity } from './utils.js';
-import { loadBotsPage } from './bots.js';
 
 export async function startHoloGuide() {
   try {
     const guide = document.getElementById('holo-guide');
+    const messageEl = document.getElementById('holo-message');
+    const nextBtn = document.getElementById('holo-next');
+    if (!guide || !messageEl || !nextBtn) {
+      showToast('Holographic guide elements missing');
+      return;
+    }
     guide.classList.remove('hidden');
     let step = 0;
     const steps = [
@@ -14,18 +19,16 @@ export async function startHoloGuide() {
       'Test your bots in the Playground.'
     ];
 
-    document.getElementById('holo-message').textContent = steps[step];
-    document.getElementById('holo-next').addEventListener('click', () => {
+    messageEl.textContent = steps[step];
+    nextBtn.addEventListener('click', () => {
       step++;
       if (step >= steps.length) {
         guide.classList.add('hidden');
-        document.getElementById('bots-modal').classList.remove('hidden');
-        loadBotsPage();
         showToast('Holographic guide completed');
         logActivity('Completed holographic guide');
         return;
       }
-      document.getElementById('holo-message').textContent = steps[step];
+      messageEl.textContent = steps[step];
       speak(steps[step]);
     });
 
