@@ -18,6 +18,28 @@ const METRIC_TYPES = {
   SESSION_CREATED: 'session_created'
 };
 
+// Constants for delivery methods
+const DELIVERY_METHODS = {
+  FIREBASE: 'firebase',
+  SENDGRID: 'sendgrid',
+  LINK_ONLY: 'link-only',
+  MAIL_CLIENT_FALLBACK: 'mail-client-fallback'
+};
+
+// Counter for ensuring unique IDs within the same millisecond
+let idCounter = 0;
+
+/**
+ * Generates a unique metric ID with better collision resistance
+ * @returns {string} A unique metric ID
+ */
+function generateMetricId() {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 10);
+  const counter = (idCounter++ % 1000).toString().padStart(3, '0');
+  return `metric_${timestamp}_${counter}_${random}`;
+}
+
 /**
  * Records a login metric event to the database
  * @param {string} type - The metric type from METRIC_TYPES
@@ -26,7 +48,7 @@ const METRIC_TYPES = {
  */
 async function recordMetric(type, data = {}) {
   const metric = {
-    id: `metric_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    id: generateMetricId(),
     type,
     timestamp: Date.now(),
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
@@ -133,8 +155,8 @@ export async function trackEmailSent(email, emailType, deliveryMethod) {
   const metric = await recordMetric(METRIC_TYPES.EMAIL_SENT, {
     recipientEmail: (email || '').toLowerCase(),
     emailType,
-    deliveryMethod,
-    sentAt: Date.now()
+    deliveryMethod
+    // Note: timestamp is already set in the base metric object
   });
 
   logActivity('Email sent', { email, emailType, deliveryMethod });
@@ -173,8 +195,8 @@ export async function trackAppProceed(userKey, destination, fromMethod) {
   const metric = await recordMetric(METRIC_TYPES.APP_PROCEED, {
     userKey,
     destination,
-    fromMethod,
-    proceededAt: Date.now()
+    fromMethod
+    // Note: timestamp is already set in the base metric object
   });
 
   logActivity('User proceeded to app', { userKey, destination, fromMethod });
@@ -192,8 +214,8 @@ export async function trackSessionCreated(sessionId, userKey, method) {
   const metric = await recordMetric(METRIC_TYPES.SESSION_CREATED, {
     sessionId,
     userKey,
-    method,
-    createdAt: Date.now()
+    method
+    // Note: timestamp is already set in the base metric object
   });
 
   logActivity('Session created', { sessionId, userKey, method });
@@ -245,7 +267,7 @@ export async function handleLoginWithMetrics({
       try {
         const emailResult = await onEmailSend();
         if (emailResult?.sent) {
-          await trackEmailSent(email, 'sign-in', emailResult.method || 'firebase');
+          await trackEmailSent(email, 'sign-in', emailResult.method || DELIVERY_METHODS.FIREBASE);
         }
       } catch (emailErr) {
         await trackEmailFailed(email, 'sign-in', emailErr.message, emailErr);
@@ -283,5 +305,5 @@ export async function handleLoginWithMetrics({
   return result;
 }
 
-// Export metric types for external use
-export { METRIC_TYPES };
+// Export metric types and delivery methods for external use
+export { METRIC_TYPES, DELIVERY_METHODS };
