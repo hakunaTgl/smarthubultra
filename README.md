@@ -69,7 +69,9 @@ cd smart-hub-ultra
 
 Install Dependencies:
 
+```bash
 npm install
+```
 
 
 
@@ -103,7 +105,9 @@ const firebaseConfig = {
 
 Run Locally:
 
-npx http-server
+```bash
+npm run dev
+```
 
 Open http://localhost:8080 in your browser.
 

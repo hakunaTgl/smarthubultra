@@ -1,0 +1,11 @@
+{
+  "name": "smarthubultra",
+  "version": "1.0.0",
+  "description": "Smart Hub Ultra - Progressive Web App for creating and managing AI bots",
+  "scripts": {
+    "dev": "http-server -c-1"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
