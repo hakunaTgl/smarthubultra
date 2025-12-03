@@ -4,54 +4,193 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Hub Ultra - Sign In</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="manifest" href="/manifest.json">
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-    import { getAnalytics } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js';
-    import { getAuth } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-    import { getDatabase } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
-    const firebaseConfig = {
-      apiKey: "AIzaSyAPPllpKiFOcjqxnuk2tRvithFYKSzkQAc",
-      authDomain: "smarthubultra.firebaseapp.com",
-      databaseURL: "https://smarthubultra-default-rtdb.firebaseio.com",
-      projectId: "smarthubultra",
-      storageBucket: "smarthubultra.firebasestorage.app",
-      messagingSenderId: "12039705608",
-      appId: "1:12039705608:web:f1a4383b245275eaa26dbd",
-      measurementId: "G-V24P3DHL9M"
-    };
-    const app = initializeApp(firebaseConfig);
-    getAnalytics(app);
-  </script>
+  <link rel="stylesheet" href="./css/style.css">
+  <link rel="manifest" href="./manifest.json">
+  <!-- Firebase is initialized from modules inside /js/main.js so bundlers resolve the 'firebase' package from node_modules -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
 </head>
 <body>
-  <div id="auth-page" class="page">
-    <div class="page-content glassmorphic">
-      <h2>Smart Hub Ultra</h2>
-      <form id="sign-up-form">
-        <input type="email" id="sign-up-email" placeholder="Email" required>
-        <input type="text" id="sign-up-username" placeholder="Username" required>
-        <input type="password" id="sign-up-password" placeholder="Password" required>
-        <input type="text" id="sign-up-six-digit" placeholder="6-Digit Code" pattern="\d{6}" required>
-        <input type="text" id="sign-up-four-digit" placeholder="4-Digit Code" pattern="\d{4}" required>
-        <button type="submit">Sign Up</button>
-      </form>
-      <form id="sign-in-form">
-        <input type="email" id="sign-in-email" placeholder="Email" required>
-        <input type="password" id="sign-in-password" placeholder="Password" required>
-        <button type="submit">Sign In</button>
-        <a href="#" id="forgot-password">Forgot Password?</a>
-      </form>
-      <form id="support-form">
-        <input type="email" id="support-email" placeholder="Email" required>
-        <textarea id="support-message" placeholder="Describe your issue" required></textarea>
-        <button type="submit">Submit Support Ticket</button>
-      </form>
+  <header class="app-header">
+    <div class="topbar">
+      <div class="brand-cluster" style="display:flex;flex-direction:column;gap:4px;">
+        <span style="font-size:1.1rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;">Smart Hub Ultra</span>
+        <span style="font-size:0.78rem;letter-spacing:0.28em;text-transform:uppercase;color:var(--tone-soft);">Creative operations OS</span>
+      </div>
+      <div class="topbar-controls" style="display:flex;align-items:center;gap:10px;">
+        <button id="dark-mode-toggle" aria-pressed="false">🌙 Dark</button>
+        <button id="voice-toggle" aria-pressed="false">🎤 Voice</button>
+        <span id="voice-status" style="font-size:0.9rem;color:var(--tone-soft);"></span>
+      </div>
     </div>
-  </div>
-  <script src="/js/main.js" type="module"></script>
-  <script src="/js/auth.js" type="module"></script>
+  </header>
+
+  <main id="auth-page" class="page">
+    <div class="page-content">
+      <section class="auth-hero">
+        <div class="auth-hero__intro">
+          <div class="pillar-pills">
+            <span class="pill">Passwordless</span>
+            <span class="pill">Project Codes</span>
+            <span class="pill">Executive Channel</span>
+          </div>
+          <h1>Command your intelligent creative universe</h1>
+          <p>Launch new ideas instantly, resume with a single project code, and invite collaborators with enterprise-grade guardrails. Smart Hub Ultra adapts in real-time so every session feels alive.</p>
+          <div id="vibe-quiz-container"></div>
+          <div class="feature-grid">
+            <article class="feature-card">
+              <span class="cue">Instant entry</span>
+              <h3>Project sessions spin up in seconds</h3>
+              <p>Create a shareable code the moment inspiration strikes. No approval queue, no password hurdles.</p>
+            </article>
+            <article class="feature-card">
+              <span class="cue">Intelligent orchestration</span>
+              <h3>Situation-aware dashboards</h3>
+              <p>Adaptive widgets surface insights, predictive nudges, and context-aware actions for every role.</p>
+            </article>
+            <article class="feature-card">
+              <span class="cue">Executive fast pass</span>
+              <h3>Authorize and escalate securely</h3>
+              <p>Custom-claim upgrades, transactional invites, and scheduled cleanup keep access sharp and safe.</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="glass-panel auth-panel">
+          <div>
+            <h2>Access Smart Hub Ultra</h2>
+            <p style="margin:0;color:var(--tone-soft);font-size:0.95rem;">Choose the path that fits your moment—magic links, project codes, guest sessions, or executive overrides.</p>
+          </div>
+
+          <form id="sign-up-form">
+            <input type="email" id="sign-up-email" placeholder="Email" required>
+            <input type="text" id="sign-up-username" placeholder="Username (optional)">
+            <label>We'll send a secure sign-in link to your email. No passwords required.</label>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+              <button id="send-signin-link" type="button">Send Sign-in Link</button>
+              <button type="submit">Send &amp; Create Account</button>
+            </div>
+          </form>
+
+          <form id="sign-in-form">
+            <input type="email" id="sign-in-email" placeholder="Email" required>
+            <button type="submit">Sign In (email link)</button>
+            <a href="#" id="forgot-password" style="font-size:0.82rem;color:var(--tone-muted);">Resend sign-in link</a>
+          </form>
+
+          <div id="magic-link-fallback" class="auth-fallback hidden">
+            <p class="auth-fallback__title">Instant magic link</p>
+            <p id="magic-link-meta" class="auth-fallback__meta"></p>
+            <div class="auth-fallback__field">
+              <input id="magic-link-url" type="text" readonly>
+              <button id="magic-link-copy" type="button">Copy</button>
+            </div>
+          </div>
+
+          <div class="auth-quick-actions">
+            <button id="project-session-btn" type="button">Start New Project Session</button>
+            <button id="guest-login-btn" type="button">Continue as Guest</button>
+            <button id="admin-fast-login-btn" type="button">Executive Fast Login</button>
+          </div>
+
+          <div id="project-code-panel" class="auth-fallback hidden">
+            <p class="auth-fallback__title">Your project code</p>
+            <p id="project-code-meta" class="auth-fallback__meta"></p>
+            <div class="auth-fallback__field">
+              <input id="project-code-value" type="text" readonly>
+              <button id="project-code-copy" type="button">Copy</button>
+            </div>
+          </div>
+
+          <form id="project-code-form">
+            <h3 style="margin:0;">Resume with Project Code</h3>
+            <input type="text" id="project-code-input" placeholder="Enter your project code" required maxlength="8" pattern="[A-Z0-9]{6,8}">
+            <button type="submit">Resume Session</button>
+            <label>Enter the project code you received earlier to pick up where you left off.</label>
+          </form>
+
+          <section class="auth-invite">
+            <h3>Invite a collaborator</h3>
+            <form id="invite-collab-form">
+              <input type="email" id="invite-email" placeholder="Their email" required>
+              <select id="invite-role">
+                <option value="user" selected>Standard user</option>
+                <option value="guest">Guest</option>
+                <option value="admin">Admin (executive)</option>
+              </select>
+              <button type="submit">Generate invite link</button>
+            </form>
+            <div id="invite-link-output" class="auth-fallback hidden">
+              <p class="auth-fallback__title">Share this invite link</p>
+              <p id="invite-link-meta" class="auth-fallback__meta"></p>
+              <div class="auth-fallback__field">
+                <input id="invite-link-url" type="text" readonly>
+                <button id="invite-link-copy" type="button">Copy</button>
+              </div>
+            </div>
+          </section>
+
+          <form id="support-form" class="support-grid">
+            <div style="display:flex;flex-direction:column;gap:0.75rem;">
+              <label for="support-email">Support email</label>
+              <input type="email" id="support-email" placeholder="Email" required>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:0.75rem;">
+              <label for="support-message">How can we help?</label>
+              <textarea id="support-message" placeholder="Describe your issue" required></textarea>
+              <button type="submit">Submit Support Ticket</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="feature-showcase">
+        <article class="feature-card">
+          <span class="cue">Experience layers</span>
+          <h3>Immersive dashboards that reshape themselves</h3>
+          <p>Behavioural overlays, holographic guidance, and adaptive themes ensure every visit feels bespoke.</p>
+        </article>
+        <article class="feature-card">
+          <span class="cue">Collaborative velocity</span>
+          <h3>Live presence, predictive alerts, shared timelines</h3>
+          <p>Streamlined invites, audit trails, and voice-first navigation keep teams in perfect sync.</p>
+        </article>
+        <article class="feature-card">
+          <span class="cue">Operational trust</span>
+          <h3>Scheduled cleanups and role intelligence baked in</h3>
+          <p>Automated hygiene jobs, transactional emails, and executive controls maintain an elite security posture.</p>
+        </article>
+      </section>
+
+      <div class="sparkle-grid">
+        <span class="pill">Adaptive UI Mesh</span>
+        <span class="pill">Behavioural DNA Guardrails</span>
+        <span class="pill">Predictive Maintenance</span>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>© 2025 Smart Hub Ultra</span>
+      <span>Designed for builders who think in light speed.</span>
+    </div>
+  </footer>
+  <!-- Firebase compatibility shim (creates window.firebase for legacy modules) -->
+  <script type="module" src="./js/firebase-compat.js"></script>
+  <script src="./js/main.js" type="module"></script>
+  <script type="module">
+    import { mountVibeQuiz } from './js/vibeQuiz.js';
+    import { loadAuth } from './js/auth.js';
+    
+    // Initialize components when DOM is ready
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        mountVibeQuiz('vibe-quiz-container');
+        await loadAuth();
+      } catch (error) {
+        console.error('Component initialization error:', error);
+      }
+    });
+  </script>
 </body>
 </html>
