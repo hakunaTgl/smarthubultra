@@ -44,3 +44,22 @@ export async function deleteBot(id) {
   logActivity(`Deleted bot ${id}`);
 }
 
+export async function getBotInsights() {
+  // Minimal safe default implementation used by the dashboard while
+  // a persistent or aggregated implementation is available.
+  // If you prefer to aggregate from IDB in future, replace this stub.
+  return {
+    total: 0,
+    active24h: 0,
+    avgRuntime: 0,
+    statuses: {},
+    recent: [],
+    categories: {}
+  };
+}
+
+export async function getBotActivity() {
+  // Return an empty activity list by default.
+  return [];
+}
+
