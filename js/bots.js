@@ -1,4 +1,5 @@
 import { IDB, showToast, speak, logActivity } from './utils.js';
+import { dbRef, remove } from './firebaseConfig.js';
 
 const DEFAULT_TEMPLATES = [
   'Echo Bot',
@@ -39,7 +40,11 @@ export async function runBot(id) {
 
 export async function deleteBot(id) {
   await IDB.batchSet('bots', [{ id, _delete: true }]);
-  firebase.database().ref('bots/' + id).remove();
+  try {
+    await remove(dbRef(`bots/${id}`));
+  } catch (err) {
+    console.warn('Failed to remove bot from Firebase:', err);
+  }
   showToast('Bot deleted');
   logActivity(`Deleted bot ${id}`);
 }
