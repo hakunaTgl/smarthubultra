@@ -46,7 +46,8 @@ export async function deleteBot(id) {
 
 export async function getBotInsights() {
   try {
-    const bots = await IDB.getAll('bots');
+    const botsData = await IDB.getAll('bots');
+    const bots = Array.isArray(botsData) ? botsData : [];
     const now = Date.now();
     const oneDayAgo = now - 86400000; // 24 hours in milliseconds
 
@@ -103,7 +104,8 @@ export async function getBotInsights() {
 
 export async function getBotActivity() {
   try {
-    const logs = await IDB.getAll('tracking');
+    const logsData = await IDB.getAll('tracking');
+    const logs = Array.isArray(logsData) ? logsData : [];
     const botLogs = logs
       .filter(log => {
         const action = String(log.action || '').toLowerCase();
