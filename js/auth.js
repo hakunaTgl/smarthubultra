@@ -38,7 +38,6 @@ export async function loadAuth() {
         const user = {
           email,
           username,
-          password,
           sixDigit: document.getElementById('sign-up-six-digit').value,
           fourDigit: document.getElementById('sign-up-four-digit').value,
           role: 'user',
