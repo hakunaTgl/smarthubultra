@@ -114,7 +114,7 @@ export async function getBotActivity() {
     const botLogs = logs
       .filter(log => {
         const action = String(log.action || '').toLowerCase();
-        return action.includes('bot') || action.includes('run') || action.includes('created') || action.includes('deleted');
+        return action.includes('bot') || action.includes('run bot') || action.includes('created bot') || action.includes('deleted bot');
       })
       .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
       .slice(0, 10)
@@ -122,8 +122,8 @@ export async function getBotActivity() {
         title: log.action || 'Bot Activity',
         details: {
           user: log.user,
-          ...(log.codeSuffix && { codeSuffix: log.codeSuffix }),
-          ...(log.length && { length: log.length })
+          ...(log.codeSuffix !== undefined && { codeSuffix: log.codeSuffix }),
+          ...(log.length !== undefined && { length: log.length })
         },
         timestamp: log.timestamp || Date.now()
       }));
