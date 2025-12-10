@@ -1,5 +1,6 @@
 import { IDB, showToast, speak, logActivity, closeAllModals } from './utils.js';
 import { setupTelegramNotifications } from './notifications.js';
+import { getAuth, updatePassword } from 'firebase/auth';
 
 export async function loadAccount() {
   try {
@@ -31,11 +32,14 @@ export async function loadAccount() {
         showToast('Invalid input: Password (min 8 chars), 6-digit, and 4-digit codes required');
         return;
       }
-      const previousPassword = user.password;
-      user.password = newPassword;
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        await updatePassword(currentUser, newPassword);
+      }
       user.sixDigit = sixDigit;
       user.fourDigit = fourDigit;
-      user.passwordChanges.push({ oldPassword: previousPassword, newPassword, timestamp: Date.now() });
+      user.passwordChanges.push({ timestamp: Date.now() });
       await IDB.batchSet('users', [user]);
       firebase.database().ref('users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')).update(user);
       showToast('Credentials updated');
