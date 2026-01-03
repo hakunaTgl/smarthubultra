@@ -1,5 +1,6 @@
 import { IDB, showToast, speak, logActivity, closeAllModals } from './utils.js';
 import { setupTelegramNotifications } from './notifications.js';
+import { getAuth, updatePassword } from 'firebase/auth';
 
 export async function loadAccount() {
   try {
@@ -31,15 +32,27 @@ export async function loadAccount() {
         showToast('Invalid input: Password (min 8 chars), 6-digit, and 4-digit codes required');
         return;
       }
-      const previousPassword = user.password;
-      user.password = newPassword;
-      user.sixDigit = sixDigit;
-      user.fourDigit = fourDigit;
-      user.passwordChanges.push({ oldPassword: previousPassword, newPassword, timestamp: Date.now() });
-      await IDB.batchSet('users', [user]);
-      firebase.database().ref('users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')).update(user);
-      showToast('Credentials updated');
-      logActivity('Updated account credentials');
+      try {
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          await updatePassword(currentUser, newPassword);
+        }
+        user.sixDigit = sixDigit;
+        user.fourDigit = fourDigit;
+        user.passwordChanges.push({ timestamp: Date.now() });
+        await IDB.batchSet('users', [user]);
+        firebase.database().ref('users/' + user.email.replace(/[^a-zA-Z0-9]/g, '')).update({ 
+          sixDigit, 
+          fourDigit, 
+          passwordChanges: user.passwordChanges 
+        });
+        showToast('Credentials updated');
+        logActivity('Updated account credentials');
+      } catch (error) {
+        showToast(`Failed to update credentials: ${error.message}`);
+        console.error('Password update error:', error);
+      }
     });
 
     document.getElementById('fetch-chat-id').addEventListener('click', async () => {
