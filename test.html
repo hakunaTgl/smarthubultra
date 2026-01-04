@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Hub Ultra - System Test</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <div class="page">
+    <div class="glassmorphic">
+      <h2>System Test Page</h2>
+      <p>Testing various components...</p>
+      
+      <button onclick="testToast()">Test Toast</button>
+      <button onclick="testSpeech()">Test Speech</button>
+      <button onclick="testInstanceCode()">Test Instance Code Generation</button>
+      <button onclick="testBotInsights()">Test getBotInsights</button>
+      <button onclick="testBotActivity()">Test getBotActivity</button>
+      
+      <div id="test-results" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+        <h3>Test Results:</h3>
+        <ul id="results-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { showToast, speak } from './js/utils.js';
+    import { generateInstanceCode } from './js/auth.js';
+    import { getBotInsights, getBotActivity } from './js/bots.js';
+
+    window.testToast = function() {
+      showToast('Toast test successful!');
+      addResult('✅ Toast functionality working');
+    };
+
+    window.testSpeech = function() {
+      speak('Speech test successful');
+      addResult('✅ Speech functionality working');
+    };
+
+    window.testInstanceCode = async function() {
+      try {
+        const code = await generateInstanceCode(1); // 1 hour expiration for testing
+        showToast(`Generated test code: ${code}`);
+        addResult(`✅ Instance code generated: ${code}`);
+      } catch (error) {
+        addResult(`❌ Instance code generation failed: ${error.message}`);
+      }
+    };
+
+    window.testBotInsights = async function() {
+      try {
+        const insights = await getBotInsights();
+        showToast('Bot insights retrieved!');
+        addResult(`✅ getBotInsights() working: total=${insights.total}, active24h=${insights.active24h}, avgRuntime=${insights.avgRuntime}ms`);
+        console.log('Bot insights:', insights);
+      } catch (error) {
+        addResult(`❌ getBotInsights() failed: ${error.message}`);
+      }
+    };
+
+    window.testBotActivity = async function() {
+      try {
+        const activity = await getBotActivity();
+        showToast('Bot activity retrieved!');
+        addResult(`✅ getBotActivity() working: ${activity.length} activity entries found`);
+        console.log('Bot activity:', activity);
+      } catch (error) {
+        addResult(`❌ getBotActivity() failed: ${error.message}`);
+      }
+    };
+
+    function addResult(message) {
+      const list = document.getElementById('results-list');
+      const item = document.createElement('li');
+      item.textContent = message;
+      item.style.margin = '5px 0';
+      list.appendChild(item);
+    }
+
+    // Test basic DOM manipulation
+    document.addEventListener('DOMContentLoaded', () => {
+      addResult('✅ DOM loaded successfully');
+      addResult('✅ Module imports working');
+    });
+  </script>
+</body>
+</html>

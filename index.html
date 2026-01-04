@@ -3,55 +3,168 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Hub Ultra - Sign In</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="manifest" href="/manifest.json">
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-    import { getAnalytics } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js';
-    import { getAuth } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-    import { getDatabase } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
-    const firebaseConfig = {
-      apiKey: "AIzaSyAPPllpKiFOcjqxnuk2tRvithFYKSzkQAc",
-      authDomain: "smarthubultra.firebaseapp.com",
-      databaseURL: "https://smarthubultra-default-rtdb.firebaseio.com",
-      projectId: "smarthubultra",
-      storageBucket: "smarthubultra.firebasestorage.app",
-      messagingSenderId: "12039705608",
-      appId: "1:12039705608:web:f1a4383b245275eaa26dbd",
-      measurementId: "G-V24P3DHL9M"
-    };
-    const app = initializeApp(firebaseConfig);
-    getAnalytics(app);
-  </script>
+  <title>Smart Hub Ultra - User Code Reference</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <link rel="manifest" href="./manifest.json">
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
 </head>
 <body>
-  <div id="auth-page" class="page">
-    <div class="page-content glassmorphic">
-      <h2>Smart Hub Ultra</h2>
-      <form id="sign-up-form">
-        <input type="email" id="sign-up-email" placeholder="Email" required>
-        <input type="text" id="sign-up-username" placeholder="Username" required>
-        <input type="password" id="sign-up-password" placeholder="Password" required>
-        <input type="text" id="sign-up-six-digit" placeholder="6-Digit Code" pattern="\d{6}" required>
-        <input type="text" id="sign-up-four-digit" placeholder="4-Digit Code" pattern="\d{4}" required>
-        <button type="submit">Sign Up</button>
-      </form>
-      <form id="sign-in-form">
-        <input type="email" id="sign-in-email" placeholder="Email" required>
-        <input type="password" id="sign-in-password" placeholder="Password" required>
-        <button type="submit">Sign In</button>
-        <a href="#" id="forgot-password">Forgot Password?</a>
-      </form>
-      <form id="support-form">
-        <input type="email" id="support-email" placeholder="Email" required>
-        <textarea id="support-message" placeholder="Describe your issue" required></textarea>
-        <button type="submit">Submit Support Ticket</button>
-      </form>
+  <header class="app-header">
+    <div class="topbar">
+      <div class="brand-cluster" style="display:flex;flex-direction:column;gap:4px;">
+        <span style="font-size:1.1rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;">Smart Hub Ultra</span>
+        <span style="font-size:0.78rem;letter-spacing:0.28em;text-transform:uppercase;color:var(--tone-soft);">Creative operations OS</span>
+      </div>
+      <div class="topbar-controls" style="display:flex;align-items:center;gap:10px;">
+        <button id="dark-mode-toggle" aria-pressed="false">🌙 Dark</button>
+        <button id="voice-toggle" aria-pressed="false">🎤 Voice</button>
+        <span id="voice-status" style="font-size:0.9rem;color:var(--tone-soft);"></span>
+      </div>
     </div>
-  </div>
-  <script src="./js/auth.js" type="module"></script
+  </header>
+
+  <main id="code-page" class="page">
+    <div class="page-content">
+      <section class="auth-hero">
+        <div class="auth-hero__intro">
+          <div class="pillar-pills">
+            <span class="pill">Code-first access</span>
+            <span class="pill">No logins</span>
+            <span class="pill">Builder recall</span>
+          </div>
+          <h1>Return to any build with a single code</h1>
+          <p>Generate a 6-digit reference code and a 4-16 character username to anchor every build session. Share the code with teammates or keep it private—no password walls, just direct access back to your activity.</p>
+          <div id="vibe-quiz-container"></div>
+          <div class="feature-grid">
+            <article class="feature-card">
+              <span class="cue">Rapid start</span>
+              <h3>Spin up a reference in seconds</h3>
+              <p>Create a username, lock in a numeric code, and jump right back into your build when you return.</p>
+            </article>
+            <article class="feature-card">
+              <span class="cue">Session recall</span>
+              <h3>Resume without friction</h3>
+              <p>Paste your code to reopen your page or activity builds instantly. We keep your last touches visible.</p>
+            </article>
+            <article class="feature-card">
+              <span class="cue">Team-friendly</span>
+              <h3>Shareable, auditable markers</h3>
+              <p>Reference cards capture usernames, timestamps, and recency so teams can align fast.</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="glass-panel auth-panel">
+          <div>
+            <h2>User Code Reference</h2>
+            <p style="margin:0;color:var(--tone-soft);font-size:0.95rem;">Create a numeric reference code and username for every build. Reuse the code anytime to return to your page or activity stream.</p>
+          </div>
+
+          <div class="code-grid">
+            <section class="code-card">
+              <div class="card-header">
+                <div>
+                  <p class="cue">Start a build</p>
+                  <h3 style="margin:4px 0 0;">Generate code + username</h3>
+                </div>
+                <span class="badge">6-digit code</span>
+              </div>
+              <label for="username-input">Username (4-16 characters)</label>
+              <input id="username-input" type="text" minlength="4" maxlength="16" placeholder="e.g. OrbitMaker" autocomplete="off" required>
+              <button id="start-build-btn" type="button">Create reference</button>
+              <p class="microcopy">We pair your username with a unique 6-digit number. Keep it to resume this build later.</p>
+            </section>
+
+            <section class="code-card">
+              <div class="card-header">
+                <div>
+                  <p class="cue">Return to a build</p>
+                  <h3 style="margin:4px 0 0;">Use an existing code</h3>
+                </div>
+                <span class="badge badge-soft">Resume</span>
+              </div>
+              <form id="resume-form">
+                <label for="resume-code-input">Reference code</label>
+                <input id="resume-code-input" type="text" inputmode="numeric" pattern="\d{6}" placeholder="123456" maxlength="6" required>
+                <button type="submit">Find my build</button>
+              </form>
+              <p class="microcopy">Paste the 6-digit code from your build card. We pull the matching username and history.</p>
+            </section>
+          </div>
+
+          <section class="code-status">
+            <div class="code-display" id="active-code">
+              <div class="code-display__header">
+                <div>
+                  <p class="cue">Active reference</p>
+                  <h3 id="active-username">No code selected</h3>
+                </div>
+                <button id="copy-code-btn" type="button" class="ghost">Copy code</button>
+              </div>
+              <div class="code-display__value" id="active-code-value">------</div>
+              <p class="microcopy" id="active-code-meta">Create or resume a build to see details here.</p>
+            </div>
+            <div class="history-panel">
+              <div class="history-header">
+                <div>
+                  <p class="cue">Recent references</p>
+                  <h3 style="margin:4px 0 0;">Saved build codes</h3>
+                </div>
+                <button id="clear-history-btn" type="button" class="ghost">Clear list</button>
+              </div>
+              <div id="code-history" class="history-list"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="feature-showcase">
+        <article class="feature-card">
+          <span class="cue">Experience layers</span>
+          <h3>Immersive dashboards that reshape themselves</h3>
+          <p>Behavioural overlays, holographic guidance, and adaptive themes ensure every visit feels bespoke.</p>
+        </article>
+        <article class="feature-card">
+          <span class="cue">Collaborative velocity</span>
+          <h3>Live presence, predictive alerts, shared timelines</h3>
+          <p>Streamlined invites, audit trails, and voice-first navigation keep teams in perfect sync.</p>
+        </article>
+        <article class="feature-card">
+          <span class="cue">Operational trust</span>
+          <h3>Scheduled cleanups and role intelligence baked in</h3>
+          <p>Automated hygiene jobs, transactional emails, and executive controls maintain an elite security posture.</p>
+        </article>
+      </section>
+
+      <div class="sparkle-grid">
+        <span class="pill">Adaptive UI Mesh</span>
+        <span class="pill">Behavioural DNA Guardrails</span>
+        <span class="pill">Predictive Maintenance</span>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>© 2025 Smart Hub Ultra</span>
+      <span>Designed for builders who think in light speed.</span>
+    </div>
+  </footer>
+  <script type="module" src="./js/firebase-compat.js"></script>
+  <script src="./js/main.js" type="module"></script>
+  <script type="module">
+    import { mountVibeQuiz } from './js/vibeQuiz.js';
+    import { loadCodeReference } from './js/codeReference.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        mountVibeQuiz('vibe-quiz-container');
+        await loadCodeReference();
+      } catch (error) {
+        console.error('Component initialization error:', error);
+      }
+    });
+  </script>
 </body>
 </html>
 </html>

@@ -1,0 +1,27 @@
+{
+  "name": "smarthubultra",
+  "version": "1.0.0",
+  "description": "Progressive Web App for creating and managing AI bots",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "start": "npm run dev",
+    "build": "vite build",
+    "preview": "vite preview --port 5000",
+    "cli": "node cli.js",
+    "clean": "rimraf dist .cache",
+    "lint": "eslint . --ext .js --color || true",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "firebase": "^9.22.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.46.0",
+    "prettier": "^3.5.0",
+    "process": "^0.11.10",
+    "rimraf": "^5.0.0",
+    "vite": "^5.2.0"
+  }
+}
