@@ -49,7 +49,9 @@
         <a href="/ar" class="nav-link">AR Mode</a>
         <button id="predictive-btn">Predictive Tasks</button>
       </div>
-      <div id="notification-list"></div>
+      <div id="notification-dropdown" class="hidden">
+        <div id="notification-list"></div>
+      </div>
       <span id="notification-count" class="hidden"></span>
       <button id="notification-icon">Notifications</button>
     </div>
