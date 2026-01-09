@@ -7,10 +7,10 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-    import { getAnalytics } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js';
-    import { getAuth } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-    import { getDatabase } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js';
+    import { getAnalytics } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js';
+    import { getAuth } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js';
+    import { getDatabase } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js';
     const firebaseConfig = {
       apiKey: "AIzaSyAPPllpKiFOcjqxnuk2tRvithFYKSzkQAc",
       authDomain: "smarthubultra.firebaseapp.com",
