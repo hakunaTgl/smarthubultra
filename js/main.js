@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAnalytics, logEvent } from 'firebase/analytics';
 import { showToast } from './utils.js';
 import { loadCodeReference } from './codeReference.js';
+import { mountVibeQuiz } from './vibeQuiz.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAPPllpKiFOcjqxnuk2tRvithFYKSzkQAc",
@@ -152,32 +153,10 @@ async function init() {
         // Load code reference system
     await loadCodeReference();
     console.log('✅ Code reference system loaded');
+        mountVibeQuiz('vibe-quiz-container');
+    console.log('✅ Vibe quiz mounted');
     
   } catch (error) {
-    console.error('❌ Critical initialization error:', error);
-    showToast(`Initialization failed: ${error.message}`);
-    throw error;
-  }
-}
+    console.error('❌ Critical
 
-// Initialize the app with comprehensive error handling
-console.log('📦 Main.js loaded, starting init...');
-init().catch(error => {
-  console.error('💥 FATAL: Initialization completely failed:', error);
-  
-  // Show user-friendly error overlay
-  document.body.innerHTML += `
-    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                background: rgba(20,20,30,0.95); border: 2px solid #ff6b6b; border-radius: 12px;
-                padding: 30px; color: white; text-align: center; z-index: 99999; max-width: 500px;">
-      <h2 style="color: #ff6b6b; margin-top: 0;">⚠️ Initialization Failed</h2>
-      <p style="margin: 20px 0;">Error: ${error.message}</p>
-      <p style="font-size: 0.9em; opacity: 0.8;">Check browser console (F12) for details</p>
-      <button onclick="location.reload()" 
-              style="background: #4ecdc4; color: white; border: none; padding: 12px 24px;
-                     border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 20px;">
-        Reload Page
-      </button>
-    </div>
-  `;
-});
+                      
