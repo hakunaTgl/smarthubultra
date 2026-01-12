@@ -1,4 +1,5 @@
-import { initializeApp } from 'firebase/app';
+112
+  import { initializeApp } from 'firebase/app';
 import { getAnalytics, logEvent } from 'firebase/analytics';
 import { showToast } from './utils.js';
 
@@ -108,7 +109,6 @@ async function init() {
   } catch (error) {
     showToast(`Initialization failed: ${error.message}`);
     console.error('Init Error:', error);
-  }
 }
 
 // Initialize the app
