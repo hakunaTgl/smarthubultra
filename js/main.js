@@ -60,7 +60,8 @@ async function init() {
       if (document.documentElement.classList.contains('dark-mode')) {
         dmToggle.textContent = '🌞 Light';
         dmToggle.setAttribute('aria-pressed', 'true');
-      }      const voiceToggle = document.getElementById('voice-toggle');
+            }
+      const voiceToggle = document.getElementById('voice-toggle');
       const voiceStatus = document.getElementById('voice-status');
       if (voiceToggle && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
