@@ -152,19 +152,4 @@
   </footer>
   <script type="module" src="./js/firebase-compat.js"></script>
   <script src="./js/main.js" type="module"></script>
-  <script type="module">
-    import { mountVibeQuiz } from './js/vibeQuiz.js';
-    import { loadCodeReference } from './js/codeReference.js';
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      try {
-        mountVibeQuiz('vibe-quiz-container');
-        await loadCodeReference();
-      } catch (error) {
-        console.error('Component initialization error:', error);
-      }
-    });
-  </script>
-</body>
-</html>
-</html>
+  
