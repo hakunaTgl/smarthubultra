@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAnalytics, logEvent } from 'firebase/analytics';
 import { showToast } from './utils.js';
+import { loadCodeReference } from './codeReference.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAPPllpKiFOcjqxnuk2tRvithFYKSzkQAc",
@@ -147,6 +148,10 @@ async function init() {
 
     showToast('Smart Hub Ultra initialized');
     console.log('🎉 Smart Hub Ultra fully initialized!');
+
+        // Load code reference system
+    await loadCodeReference();
+    console.log('✅ Code reference system loaded');
     
   } catch (error) {
     console.error('❌ Critical initialization error:', error);
