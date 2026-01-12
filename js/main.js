@@ -1,4 +1,5 @@
-110
+73
+  110
   100
   112
   import { initializeApp } from 'firebase/app';
@@ -107,7 +108,7 @@ async function init() {
         voiceToggle.disabled = true;
         if (voiceStatus) voiceStatus.textContent = 'Voice not supported';
       }
-    } catch (e) {
+      } catch (e) {
       console.warn('theme/voice init failed', e);
     }
   } catch (error) {
