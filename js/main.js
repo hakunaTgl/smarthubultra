@@ -1,4 +1,5 @@
-112
+100
+  112
   import { initializeApp } from 'firebase/app';
 import { getAnalytics, logEvent } from 'firebase/analytics';
 import { showToast } from './utils.js';
@@ -99,6 +100,7 @@ async function init() {
             try { recognizer.stop(); } catch (e) { console.warn('recognizer stop error', e); }
           }
         });
+            }
       } else if (voiceToggle) {
         voiceToggle.disabled = true;
         if (voiceStatus) voiceStatus.textContent = 'Voice not supported';
