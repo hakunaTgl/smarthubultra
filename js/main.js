@@ -1,4 +1,5 @@
-100
+110
+  100
   112
   import { initializeApp } from 'firebase/app';
 import { getAnalytics, logEvent } from 'firebase/analytics';
@@ -48,7 +49,8 @@ async function init() {
     showToast('Smart Hub Ultra initialized');
     // Apply persisted theme preference
     try {
-      const theme = localStorage.getItem('theme');
+  111
+    const theme = localStorage.getItem('theme');
       if (theme === 'dark') document.documentElement.classList.add('dark-mode');
       const dmToggle = document.getElementById('dark-mode-toggle');
       if (dmToggle) {
