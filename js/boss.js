@@ -1,7 +1,10 @@
 import { IDB, showToast, speak, logActivity } from './utils.js';
+import { getDatabase, ref, set } from 'firebase/database';
+import { app } from './main.js';
 
 export async function loadBossView() {
   try {
+    const database = getDatabase(app);
     const usersDiv = document.getElementById('boss-users');
     usersDiv.innerHTML = '';
     const users = await IDB.getAll('users');
@@ -53,7 +56,7 @@ export async function loadBossView() {
         timestamp: Date.now()
       };
       await IDB.batchSet('notifications', [notification]);
-      firebase.database().ref('notifications/' + notification.id).set(notification);
+      await set(ref(database, 'notifications/' + notification.id), notification);
       showToast('Announcement broadcasted');
       logActivity(`Broadcasted announcement: ${message}`);
     });

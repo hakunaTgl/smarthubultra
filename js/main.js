@@ -13,7 +13,7 @@ const firebaseConfig = {
   measurementId: "G-V24P3DHL9M"
 };
 
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
 async function init() {
