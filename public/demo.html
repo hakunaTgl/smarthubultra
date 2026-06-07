@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartHub Ultra — AI Creator Hub</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0e0ff;font-family:'Segoe UI',sans-serif;min-height:100vh}
+.header{background:linear-gradient(135deg,#1a0533,#0d1f3c);padding:18px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #7c3aed33}
+.logo{font-size:1.4rem;font-weight:800;background:linear-gradient(90deg,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.status{display:flex;align-items:center;gap:8px;font-size:.82rem;color:#a78bfa}
+.dot{width:8px;height:8px;background:#22c55e;border-radius:50%;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.layout{display:grid;grid-template-columns:220px 1fr 280px;height:calc(100vh - 60px)}
+.sidebar{background:#0f0f1a;border-right:1px solid #1e1e3a;padding:16px}
+.sidebar h3{font-size:.7rem;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.tool-btn{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;margin-bottom:6px;transition:.2s;font-size:.88rem;color:#c4c4e0}
+.tool-btn:hover,.tool-btn.active{background:#7c3aed22;color:#a78bfa}
+.tool-btn .icon{font-size:1.1rem}
+.main{background:#0d0d1a;padding:24px;overflow-y:auto}
+.welcome{text-align:center;margin-bottom:32px}
+.welcome h1{font-size:2rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#38bdf8,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.welcome p{color:#6b7280;margin-top:8px}
+.agent-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.agent-card{background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid #7c3aed33;border-radius:12px;padding:18px;cursor:pointer;transition:.3s;position:relative;overflow:hidden}
+.agent-card::before{content:'';position:absolute;top:-40px;right:-40px;width:80px;height:80px;background:radial-gradient(circle,#7c3aed22,transparent);border-radius:50%}
+.agent-card:hover{border-color:#a78bfa;transform:translateY(-3px);box-shadow:0 8px 32px #7c3aed22}
+.agent-card h3{font-size:.95rem;font-weight:700;margin-bottom:6px;color:#e0e0ff}
+.agent-card p{font-size:.78rem;color:#6b7280;line-height:1.5}
+.agent-card .badge{display:inline-block;background:#7c3aed22;border:1px solid #7c3aed44;color:#a78bfa;font-size:.68rem;padding:2px 8px;border-radius:12px;margin-top:10px}
+.chat-area{background:#111120;border:1px solid #1e1e3a;border-radius:12px;padding:16px;margin-bottom:20px}
+.chat-msg{display:flex;gap:10px;margin-bottom:14px}
+.avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+.ai-avatar{background:linear-gradient(135deg,#7c3aed,#2563eb)}
+.user-avatar{background:linear-gradient(135deg,#f472b6,#a855f7)}
+.msg-content{background:#1a1a2e;border-radius:8px;padding:10px 14px;font-size:.85rem;line-height:1.6;max-width:85%}
+.input-row{display:flex;gap:10px}
+.chat-input{flex:1;background:#1a1a2e;border:1px solid #2e2e4e;border-radius:8px;padding:10px 14px;color:#e0e0ff;font-size:.88rem;outline:none}
+.chat-input:focus{border-color:#7c3aed}
+.send-btn{background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;border-radius:8px;padding:10px 18px;color:#fff;cursor:pointer;font-weight:600;font-size:.85rem}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat{background:#111120;border:1px solid #1e1e3a;border-radius:10px;padding:14px;text-align:center}
+.stat-val{font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:.72rem;color:#6b7280;margin-top:4px}
+.panel{background:#0f0f1a;border-left:1px solid #1e1e3a;padding:16px;overflow-y:auto}
+.panel h3{font-size:.8rem;color:#a78bfa;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+.feed-item{background:#111120;border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:.8rem;border-left:2px solid #7c3aed}
+.feed-item .time{color:#6b7280;font-size:.7rem;margin-top:4px}
+.tag{display:inline-block;background:#22c55e22;border:1px solid #22c55e44;color:#22c55e;font-size:.68rem;padding:1px 6px;border-radius:4px;margin-right:4px}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">⚡ SmartHub Ultra</div>
+  <div class="status"><div class="dot"></div> 7 Agents Active &nbsp;|&nbsp; AI Engine Online</div>
+</div>
+<div class="layout">
+  <div class="sidebar">
+    <div style="margin-bottom:20px">
+      <h3>Navigation</h3>
+      <div class="tool-btn active"><span class="icon">🧠</span> AI Agents</div>
+      <div class="tool-btn"><span class="icon">🎨</span> Creator Tools</div>
+      <div class="tool-btn"><span class="icon">📊</span> Analytics</div>
+      <div class="tool-btn"><span class="icon">🤖</span> Automation</div>
+      <div class="tool-btn"><span class="icon">🔗</span> Integrations</div>
+    </div>
+    <div>
+      <h3>Active Pipelines</h3>
+      <div class="tool-btn"><span class="icon">▶</span> Content Gen</div>
+      <div class="tool-btn"><span class="icon">▶</span> SEO Optimizer</div>
+      <div class="tool-btn"><span class="icon">▶</span> Social Poster</div>
+      <div class="tool-btn"><span class="icon">▶</span> Analytics Bot</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="welcome">
+      <h1>AI Creator Hub</h1>
+      <p>Multi-agent automation platform for content creators & builders</p>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-val">2.4k</div><div class="stat-label">Tasks Completed</div></div>
+      <div class="stat"><div class="stat-val">7</div><div class="stat-label">Active Agents</div></div>
+      <div class="stat"><div class="stat-val">98%</div><div class="stat-label">Uptime</div></div>
+      <div class="stat"><div class="stat-val">12s</div><div class="stat-label">Avg Response</div></div>
+    </div>
+    <div class="agent-grid">
+      <div class="agent-card"><h3>🖊️ Content Writer</h3><p>Generates blogs, captions, scripts with brand voice tuning.</p><span class="badge">GPT-4 Powered</span></div>
+      <div class="agent-card"><h3>📈 SEO Agent</h3><p>Keyword research, meta optimization, SERP analysis pipeline.</p><span class="badge">Live</span></div>
+      <div class="agent-card"><h3>🎬 Video Planner</h3><p>Script → storyboard → publish pipeline for YouTube & Reels.</p><span class="badge">Multi-modal</span></div>
+      <div class="agent-card"><h3>📱 Social Poster</h3><p>Schedules & posts to Twitter, Instagram, LinkedIn automatically.</p><span class="badge">Scheduled</span></div>
+      <div class="agent-card"><h3>🔍 Research Agent</h3><p>Deep web research with source verification & summary reports.</p><span class="badge">Live</span></div>
+      <div class="agent-card"><h3>📧 Email Marketer</h3><p>Writes, A/B tests, and sends email campaigns autonomously.</p><span class="badge">Active</span></div>
+    </div>
+    <div class="chat-area">
+      <div class="chat-msg"><div class="avatar ai-avatar">🤖</div><div class="msg-content">SmartHub Ultra online. All 7 agents initialized. What would you like to create today?</div></div>
+      <div class="chat-msg"><div class="avatar user-avatar">TF</div><div class="msg-content">Generate a product review article for NIU KQi3 Pro scooter</div></div>
+      <div class="chat-msg"><div class="avatar ai-avatar">🤖</div><div class="msg-content">✅ Initiating Content Writer Agent... pulling NIU KQi3 Pro specs, generating 1,200-word SEO-optimized review with pros/cons section. ETA: 18 seconds.</div></div>
+      <div class="input-row">
+        <input class="chat-input" placeholder="Command an agent..." id="chatIn">
+        <button class="send-btn" onclick="sendMsg()">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Live Activity Feed</h3>
+    <div class="feed-item"><span class="tag">Done</span> SEO report generated<div class="time">2 mins ago</div></div>
+    <div class="feed-item"><span class="tag">Done</span> 3 posts scheduled<div class="time">5 mins ago</div></div>
+    <div class="feed-item"><span class="tag">Running</span> Email campaign A/B test<div class="time">Now</div></div>
+    <div class="feed-item"><span class="tag">Done</span> Research: EV scooter trends<div class="time">12 mins ago</div></div>
+    <div class="feed-item"><span class="tag">Done</span> 1,400-word article drafted<div class="time">18 mins ago</div></div>
+    <div class="feed-item"><span class="tag">Running</span> Video script: micro-mobility<div class="time">Now</div></div>
+    <div style="margin-top:20px">
+      <h3>Integrations</h3>
+      <div class="feed-item">✅ OpenAI API<div class="time">Connected</div></div>
+      <div class="feed-item">✅ Telegram Bot<div class="time">Connected</div></div>
+      <div class="feed-item">✅ Google Search<div class="time">Connected</div></div>
+      <div class="feed-item">✅ Mailchimp<div class="time">Connected</div></div>
+    </div>
+  </div>
+</div>
+<script>
+function sendMsg(){
+  const inp=document.getElementById('chatIn');
+  const val=inp.value.trim();
+  if(!val)return;
+  const chat=document.querySelector('.chat-area');
+  const userMsg=document.createElement('div');
+  userMsg.className='chat-msg';
+  userMsg.innerHTML=`<div class="avatar user-avatar">TF</div><div class="msg-content">${val}</div>`;
+  chat.insertBefore(userMsg,chat.lastElementChild);
+  const aiMsg=document.createElement('div');
+  aiMsg.className='chat-msg';
+  aiMsg.innerHTML=`<div class="avatar ai-avatar">🤖</div><div class="msg-content">Processing: "${val}" — Agent assigned, pipeline running...</div>`;
+  chat.insertBefore(aiMsg,chat.lastElementChild);
+  inp.value='';
+}
+document.getElementById('chatIn').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg()});
+</script>
+</body>
+</html>
