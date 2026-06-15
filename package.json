@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "commander": "^11.0.0",
-    "firebase": "^9.22.0"
+    "firebase": "^12.14.0"
   },
   "devDependencies": {
     "eslint": "^8.46.0",
