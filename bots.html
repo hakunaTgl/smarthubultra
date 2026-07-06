@@ -48,5 +48,13 @@
   </div>
   <script src="/js/main.js" type="module"></script>
   <script src="/js/bots.js" type="module"></script>
+    <script type="module">
+    import { loadBotsPage, createBotFromText } from '/js/bots.js';
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadBotsPage();
+      const btn = document.getElementById('create-bot');
+      if (btn) btn.addEventListener('click', createBotFromText);
+    });
+  </script>
 </body>
 </html>
