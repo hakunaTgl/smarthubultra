@@ -47,14 +47,42 @@
     </div>
   </div>
   <script src="/js/main.js" type="module"></script>
-  <script src="/js/bots.js" type="module"></script>
-    <script type="module">
-    import { loadBotsPage, createBotFromText } from '/js/bots.js';
-    document.addEventListener('DOMContentLoaded', async () => {
-      await loadBotsPage();
-      const btn = document.getElementById('create-bot');
-      if (btn) btn.addEventListener('click', createBotFromText);
-    });
-  </script>
+  <script>
+  const DEFAULT_TEMPLATES = ['Echo Bot','Greeting Bot','Support Bot','Analytics Bot','Notification Bot','Scheduler Bot'];
+  document.addEventListener('DOMContentLoaded', function() {
+    var sel = document.getElementById('bot-template');
+    if (sel) {
+      sel.innerHTML = '<option value="">-- Select Template --</option>';
+      DEFAULT_TEMPLATES.forEach(function(name) {
+        var opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        sel.appendChild(opt);
+      });
+    }
+    var btn = document.getElementById('create-bot');
+    if (btn) {
+      btn.addEventListener('click', function() {
+        var nameVal = (document.getElementById('bot-name')||{}).value || '';
+        var purposeVal = (document.getElementById('bot-purpose')||{}).value || '';
+        var templateVal = (document.getElementById('bot-template')||{}).value || 'Echo Bot';
+        nameVal = nameVal.trim();
+        if (!nameVal || nameVal.length < 3 || nameVal.length > 50) {
+          alert('Bot name must be between 3 and 50 characters.');
+          return;
+        }
+        var bot = { id: 'bot_'+Date.now(), name: nameVal, purpose: purposeVal||'General purpose bot', template: templateVal, status: 'active', createdAt: Date.now() };
+        var list = document.getElementById('bot-list');
+        if (list) {
+          var card = document.createElement('div');
+          card.className = 'bot-card';
+          card.innerHTML = '<strong>'+bot.name+'</strong><br><small>'+bot.template+'</small><br><em>'+bot.purpose+'</em>';
+          list.appendChild(card);
+        }
+        alert('Bot "'+bot.name+'" created!');
+      });
+    }
+  });
+</script>
 </body>
 </html>
