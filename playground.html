@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Hub Ultra - Playground</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    .run-btn { padding:0.5rem 1.4rem; border-radius:8px; border:none; background:rgba(99,102,241,0.3); color:#a5b4fc; cursor:pointer; font-size:0.9rem; font-weight:600; }
+    .run-btn:hover { background:rgba(99,102,241,0.5); }
+    .output-box { background:rgba(0,0,0,0.4); color:#6ee7b7; font-family:monospace; font-size:0.85rem; padding:1rem; border-radius:10px; min-height:120px; white-space:pre-wrap; border:1px solid rgba(255,255,255,0.08); margin-top:1rem; }
+    .input-box { width:100%; padding:0.75rem; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); color:#e2e8f0; font-family:monospace; font-size:0.9rem; margin-bottom:0.5rem; }
+  </style>
+</head>
+<body>
+  <nav class="app-nav" style="background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.08);padding:0.6rem 1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+    <a href="/index.html" style="color:var(--tone-soft,#888);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(255,255,255,0.12);">← Home</a>
+    <a href="/dashboard.html" style="color:var(--accent,#a5b4fc);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(165,180,252,0.3);">🏠 Dashboard</a>
+    <a href="/bots.html" style="color:var(--accent,#a5b4fc);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(165,180,252,0.3);">🤖 Bots</a>
+    <span style="font-size:0.82rem;color:var(--tone-soft,#888);margin-left:auto;">🎮 Playground</span>
+  </nav>
+  <div class="page">
+    <div class="page-content glassmorphic" style="padding:2rem;max-width:900px;margin:2rem auto;">
+      <h2 style="margin-bottom:0.5rem;">🎮 Playground</h2>
+      <p style="color:var(--tone-soft,#aaa);margin-bottom:1.5rem;">Interactively test your bots with live input. No deployment needed.</p>
+      <label style="font-size:0.85rem;color:var(--tone-soft,#aaa);display:block;margin-bottom:0.4rem;">Select Bot Template</label>
+      <select id="pg-template" class="input-box" style="max-width:320px;">
+        <option value="echo">Echo Bot</option>
+        <option value="greeting">Greeting Bot</option>
+        <option value="support">Support Bot</option>
+        <option value="analytics">Analytics Bot</option>
+      </select>
+      <label style="font-size:0.85rem;color:var(--tone-soft,#aaa);display:block;margin-bottom:0.4rem;">Input Message</label>
+      <input id="pg-input" class="input-box" placeholder="Type a message to send to the bot..." />
+      <div style="display:flex;gap:0.75rem;align-items:center;">
+        <button class="run-btn" onclick="runPlayground()">&#9654; Run Bot</button>
+        <button class="run-btn" style="background:rgba(239,68,68,0.15);color:#fca5a5;" onclick="clearOutput()">Clear</button>
+      </div>
+      <div id="pg-output" class="output-box">Output will appear here...</div>
+    </div>
+  </div>
+  <script>
+    function runPlayground() {
+      const template = document.getElementById('pg-template').value;
+      const input = document.getElementById('pg-input').value.trim();
+      const output = document.getElementById('pg-output');
+      if (!input) { output.textContent = 'Error: Please enter an input message.'; return; }
+      const timestamp = new Date().toLocaleTimeString();
+      let response = '';
+      switch (template) {
+        case 'echo': response = 'Echo: ' + input; break;
+        case 'greeting': response = 'Hello! Welcome, ' + input + '. How can I assist you today?'; break;
+        case 'support': response = 'Support Bot: Thank you for reaching out. Your message "' + input + '" has been received. A team member will follow up shortly.'; break;
+        case 'analytics': response = 'Analytics Bot: Processed input "' + input + '". Word count: ' + input.split(' ').length + '. Character count: ' + input.length + '.'; break;
+        default: response = 'Unknown template.';
+      }
+      output.textContent = '[' + timestamp + '] Bot: ' + response + '\n\n' + (output.textContent === 'Output will appear here...' ? '' : output.textContent);
+    }
+    function clearOutput() { document.getElementById('pg-output').textContent = 'Output will appear here...'; }
+    document.getElementById('pg-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') runPlayground(); });
+  </script>
+  <script src="/js/main.js" type="module"></script>
+</body>
+</html>
