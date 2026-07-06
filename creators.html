@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Hub Ultra - Creators</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+  <nav class="app-nav" style="background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.08);padding:0.6rem 1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+    <a href="/index.html" style="color:var(--tone-soft,#888);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(255,255,255,0.12);">← Home</a>
+    <a href="/dashboard.html" style="color:var(--accent,#a5b4fc);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(165,180,252,0.3);">🏠 Dashboard</a>
+    <span style="font-size:0.82rem;color:var(--tone-soft,#888);margin-left:auto;">🌟 Creators</span>
+  </nav>
+  <div class="page">
+    <div class="page-content glassmorphic" style="padding:2rem;max-width:900px;margin:2rem auto;">
+      <h2 style="margin-bottom:0.5rem;">🌟 Creators Hub</h2>
+      <p style="color:var(--tone-soft,#aaa);margin-bottom:2rem;">Discover and connect with top bot builders in the Smart Hub Ultra community.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.2rem;" id="creators-grid"></div>
+      <div style="margin-top:2rem;padding:1.5rem;border-radius:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);">
+        <h3 style="margin-bottom:0.5rem;">🚀 Become a Creator</h3>
+        <p style="color:var(--tone-soft,#aaa);font-size:0.9rem;margin-bottom:1rem;">Build and publish your bots to the marketplace. Earn recognition from the community.</p>
+        <a href="/bots.html" style="display:inline-block;padding:0.5rem 1.2rem;border-radius:8px;background:rgba(99,102,241,0.25);color:#a5b4fc;text-decoration:none;">Start Building →</a>
+      </div>
+    </div>
+  </div>
+  <script>
+    const creators = [
+      { name: 'hakunaTgl', role: 'Core Developer', bots: 12, emoji: '👨‍💻' },
+      { name: 'NebulaMaker', role: 'UI Architect', bots: 7, emoji: '🎨' },
+      { name: 'QuantumBot', role: 'AI Specialist', bots: 15, emoji: '🤖' },
+      { name: 'VoiceForge', role: 'Voice Systems', bots: 5, emoji: '🎙' },
+      { name: 'DataNinja', role: 'Analytics Expert', bots: 9, emoji: '📊' },
+      { name: 'SynthWave', role: 'Automation Pro', bots: 11, emoji: '⚡' }
+    ];
+    const grid = document.getElementById('creators-grid');
+    creators.forEach(c => {
+      const card = document.createElement('div');
+      card.style.cssText = 'padding:1.25rem;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);text-align:center;';
+      card.innerHTML = '<div style="font-size:2.5rem;margin-bottom:0.5rem;">' + c.emoji + '</div><h3 style="font-size:1rem;margin-bottom:0.25rem;">' + c.name + '</h3><p style="color:var(--tone-soft,#aaa);font-size:0.8rem;margin-bottom:0.5rem;">' + c.role + '</p><span style="font-size:0.78rem;padding:2px 10px;border-radius:20px;background:rgba(99,102,241,0.15);color:#a5b4fc;">' + c.bots + ' bots</span>';
+      grid.appendChild(card);
+    });
+  </script>
+  <script src="/js/main.js" type="module"></script>
+</body>
+</html>
