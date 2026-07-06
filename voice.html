@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Hub Ultra - Voice</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    .voice-btn { padding:0.6rem 1.5rem; border-radius:10px; border:none; background:rgba(99,102,241,0.25); color:#a5b4fc; cursor:pointer; font-size:0.9rem; font-weight:600; margin-right:0.5rem; transition:background 0.2s; }
+    .voice-btn:hover { background:rgba(99,102,241,0.45); }
+    .voice-btn.active { background:rgba(239,68,68,0.3); color:#fca5a5; }
+    .transcript-box { background:rgba(0,0,0,0.35); color:#a5f3fc; font-family:monospace; font-size:0.88rem; padding:1rem; border-radius:10px; min-height:80px; border:1px solid rgba(255,255,255,0.08); margin-top:1rem; white-space:pre-wrap; }
+  </style>
+</head>
+<body>
+  <nav class="app-nav" style="background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.08);padding:0.6rem 1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+    <a href="/index.html" style="color:var(--tone-soft,#888);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(255,255,255,0.12);">← Home</a>
+    <a href="/dashboard.html" style="color:var(--accent,#a5b4fc);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(165,180,252,0.3);">🏠 Dashboard</a>
+    <span style="font-size:0.82rem;color:var(--tone-soft,#888);margin-left:auto;">🎙 Voice</span>
+  </nav>
+  <div class="page">
+    <div class="page-content glassmorphic" style="padding:2rem;max-width:800px;margin:2rem auto;">
+      <h2 style="margin-bottom:0.5rem;">🎙 Voice Control</h2>
+      <p style="color:var(--tone-soft,#aaa);margin-bottom:2rem;">Use voice commands to control bots and navigate Smart Hub Ultra hands-free.</p>
+      <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+        <button id="listen-btn" class="voice-btn" onclick="toggleListen()">🎙 Start Listening</button>
+        <button class="voice-btn" onclick="speakTest()">&#128266; Test Speech</button>
+      </div>
+      <div id="voice-status" style="font-size:0.85rem;color:var(--tone-soft,#aaa);margin-bottom:0.5rem;">Status: Idle</div>
+      <div id="transcript" class="transcript-box">Voice transcript will appear here...</div>
+      <div style="margin-top:2rem;">
+        <h3 style="margin-bottom:1rem;font-size:0.95rem;">Available Voice Commands</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.75rem;">
+          <div style="padding:0.75rem;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);"><strong style="font-size:0.85rem;">"Go to bots"</strong><br><span style="font-size:0.78rem;color:var(--tone-soft,#aaa);">Navigate to Bots page</span></div>
+          <div style="padding:0.75rem;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);"><strong style="font-size:0.85rem;">"Go to dashboard"</strong><br><span style="font-size:0.78rem;color:var(--tone-soft,#aaa);">Navigate to Dashboard</span></div>
+          <div style="padding:0.75rem;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);"><strong style="font-size:0.85rem;">"Open playground"</strong><br><span style="font-size:0.78rem;color:var(--tone-soft,#aaa);">Open Playground</span></div>
+          <div style="padding:0.75rem;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);"><strong style="font-size:0.85rem;">"Show boss"</strong><br><span style="font-size:0.78rem;color:var(--tone-soft,#aaa);">Open Boss View</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    let recognition = null, listening = false;
+    const statusEl = document.getElementById('voice-status');
+    const transcriptEl = document.getElementById('transcript');
+    const btn = document.getElementById('listen-btn');
+    function toggleListen() {
+      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+        statusEl.textContent = 'Status: Speech recognition not supported in this browser.';
+        return;
+      }
+      if (listening) {
+        recognition && recognition.stop();
+        listening = false;
+        btn.textContent = '🎙 Start Listening';
+        btn.classList.remove('active');
+        statusEl.textContent = 'Status: Stopped';
+      } else {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SR();
+        recognition.lang = 'en-US';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.onstart = () => { listening = true; statusEl.textContent = 'Status: Listening...'; btn.textContent = '⏹ Stop Listening'; btn.classList.add('active'); };
+        recognition.onresult = (e) => {
+          let text = '';
+          for (let i = e.resultIndex; i < e.results.length; i++) text += e.results[i][0].transcript;
+          transcriptEl.textContent = text;
+          const cmd = text.toLowerCase().trim();
+          if (cmd.includes('go to bots') || cmd.includes('open bots')) location.href = '/bots.html';
+          else if (cmd.includes('go to dashboard') || cmd.includes('dashboard')) location.href = '/dashboard.html';
+          else if (cmd.includes('playground')) location.href = '/playground.html';
+          else if (cmd.includes('boss')) location.href = '/boss.html';
+        };
+        recognition.onerror = (e) => { statusEl.textContent = 'Status: Error - ' + e.error; };
+        recognition.onend = () => { if (listening) recognition.start(); };
+        recognition.start();
+      }
+    }
+    function speakTest() {
+      if (window.speechSynthesis) {
+        const u = new SpeechSynthesisUtterance('Smart Hub Ultra voice system is active and ready.');
+        u.lang = 'en-US';
+        window.speechSynthesis.speak(u);
+        statusEl.textContent = 'Status: Speaking test message...';
+      } else statusEl.textContent = 'Status: Speech synthesis not supported.';
+    }
+  </script>
+  <script src="/js/main.js" type="module"></script>
+</body>
+</html>
