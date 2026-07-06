@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Hub Ultra - Manual</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    .toc-link { display:block; padding:0.4rem 0; color:#a5b4fc; text-decoration:none; font-size:0.88rem; border-bottom:1px solid rgba(255,255,255,0.06); }
+    .toc-link:hover { color:#fff; }
+    .manual-section { margin-bottom:2rem; padding:1.5rem; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); }
+    .manual-section h3 { margin-bottom:0.75rem; font-size:1.05rem; }
+    .manual-section p, .manual-section li { color:var(--tone-soft,#ccc); font-size:0.88rem; line-height:1.6; }
+    .manual-section ul { padding-left:1.25rem; }
+    code { background:rgba(0,0,0,0.4); padding:2px 6px; border-radius:4px; font-family:monospace; font-size:0.82rem; color:#6ee7b7; }
+  </style>
+</head>
+<body>
+  <nav class="app-nav" style="background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.08);padding:0.6rem 1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+    <a href="/index.html" style="color:var(--tone-soft,#888);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(255,255,255,0.12);">← Home</a>
+    <a href="/dashboard.html" style="color:var(--accent,#a5b4fc);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(165,180,252,0.3);">🏠 Dashboard</a>
+    <span style="font-size:0.82rem;color:var(--tone-soft,#888);margin-left:auto;">📖 Manual</span>
+  </nav>
+  <div class="page" style="display:flex;gap:0;">
+    <div style="display:flex;flex-direction:column;gap:0;max-width:1100px;margin:2rem auto;padding:0 1.5rem;width:100%;">
+      <h2 style="margin-bottom:0.5rem;">📖 Smart Hub Ultra Manual</h2>
+      <p style="color:var(--tone-soft,#aaa);margin-bottom:2rem;">Complete guide to using Smart Hub Ultra - the AI bot management platform.</p>
+      <div class="manual-section">
+        <h3>&#x1F680; Getting Started</h3>
+        <p>Smart Hub Ultra is a Progressive Web App (PWA) for creating and managing AI bots. No account required to start - use Code-First Access for instant session tracking.</p>
+        <ul>
+          <li>Visit the <a href="/index.html" style="color:#a5b4fc;">home page</a> to generate a 6-digit reference code.</li>
+          <li>Use your code to return to your session anytime without a password.</li>
+          <li>Navigate to the <a href="/dashboard.html" style="color:#a5b4fc;">Dashboard</a> to access all features.</li>
+        </ul>
+      </div>
+      <div class="manual-section">
+        <h3>&#x1F916; Creating Bots</h3>
+        <p>Navigate to <a href="/bots.html" style="color:#a5b4fc;">Bots</a> to create your first bot.</p>
+        <ul>
+          <li><strong>Bot Name:</strong> Must be 3-50 characters.</li>
+          <li><strong>Bot Purpose:</strong> Describe what your bot does.</li>
+          <li><strong>Template:</strong> Choose from Echo Bot, Greeting Bot, Support Bot, Analytics Bot, Notification Bot, or Scheduler Bot.</li>
+          <li>Click <strong>Create Bot</strong> to save. Bots are stored locally via IndexedDB and optionally synced to Firebase.</li>
+        </ul>
+      </div>
+      <div class="manual-section">
+        <h3>&#x1F3AE; Playground</h3>
+        <p>Test bots interactively at <a href="/playground.html" style="color:#a5b4fc;">Playground</a>. Select a template, type an input, and press Run Bot or hit Enter to see the response.</p>
+      </div>
+      <div class="manual-section">
+        <h3>&#x1F4DD; Code Editor</h3>
+        <p>Write custom bot scripts at <a href="/editor.html" style="color:#a5b4fc;">Editor</a>. Your code auto-saves every 30 seconds to <code>localStorage</code>. Use the Insert Template button to get started quickly.</p>
+      </div>
+      <div class="manual-section">
+        <h3>&#x1F3D5; Boss Intelligence Center</h3>
+        <p>The <a href="/boss.html" style="color:#a5b4fc;">Boss View</a> provides unified oversight: People Graph, Automation Estate, Support Radar, Ops Pulse, Activity Stream, and Behavioral DNA Grid.</p>
+      </div>
+      <div class="manual-section">
+        <h3>&#x1F4CA; Analytics</h3>
+        <p>View bot statistics, template usage breakdowns, and activity logs at <a href="/analytics.html" style="color:#a5b4fc;">Analytics</a>. Data is pulled from your local bot store.</p>
+      </div>
+      <div class="manual-section">
+        <h3>&#x1F399; Voice Control</h3>
+        <p>Enable voice navigation at <a href="/voice.html" style="color:#a5b4fc;">Voice</a>. Uses the Web Speech API. Say commands like <code>"Go to bots"</code>, <code>"Open playground"</code>, or <code>"Show boss"</code> to navigate.</p>
+      </div>
+      <div class="manual-section">
+        <h3>&#x1F4F1; PWA &amp; Offline</h3>
+        <p>Smart Hub Ultra is installable as a PWA. On Chrome/Edge, look for the install icon in the address bar. Once installed, core pages work offline via the service worker cache.</p>
+      </div>
+      <div class="manual-section">
+        <h3>&#x1F527; Firebase Setup (Optional)</h3>
+        <p>For cloud sync and real-time collaboration, connect your Firebase project:</p>
+        <ul>
+          <li>Create a project at <a href="https://firebase.google.com" style="color:#a5b4fc;" target="_blank">firebase.google.com</a></li>
+          <li>Enable Authentication and Realtime Database</li>
+          <li>Update <code>js/firebaseConfig.js</code> with your project credentials</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <script src="/js/main.js" type="module"></script>
+</body>
+</html>
