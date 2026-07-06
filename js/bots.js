@@ -1,5 +1,5 @@
 import { IDB, showToast, speak, logActivity } from './utils.js';
-import { dbRef, remove, set, getAuth } from './firebaseConfig.js';
+import { dbRef, remove, set, auth } from './firebaseConfig.js';
 
 const DEFAULT_TEMPLATES = [
   'Echo Bot',
@@ -34,6 +34,14 @@ export async function loadBotsPage() {
   await populateBotTemplates();
   await renderBotList();
   speak('Welcome to the Bots page!');
+}
+
+function getUid() {
+  const user = auth && auth.currentUser;
+  if (user) return user.uid;
+  try {
+    return (JSON.parse(localStorage.getItem('currentUser') || '{}').uid || 'guest');
+  } catch (e) { return 'guest'; }
 }
 
 function renderBotCard(bot) {
@@ -98,20 +106,15 @@ export async function createBotFromText() {
     lastRun: null
   };
 
-  // Save to IndexedDB
   await IDB.batchSet('bots', [bot]);
 
-  // Save to Firebase if user is authenticated
   try {
-    const auth = getAuth();
-    const user = auth && auth.currentUser;
-    const uid = user ? user.uid : (JSON.parse(localStorage.getItem('currentUser') || '{}').uid || 'guest');
+    const uid = getUid();
     await set(dbRef(`users/${uid}/bots/${id}`), bot);
   } catch (err) {
     console.warn('Firebase save skipped:', err);
   }
 
-  // Update DOM
   const container = document.getElementById('bot-list');
   if (container) {
     const placeholder = container.querySelector('p');
@@ -119,7 +122,6 @@ export async function createBotFromText() {
     container.prepend(renderBotCard(bot));
   }
 
-  // Clear inputs
   if (nameInput) nameInput.value = '';
   if (purposeInput) purposeInput.value = '';
   if (templateSelect) templateSelect.selectedIndex = 0;
@@ -137,7 +139,6 @@ export async function runBot(id) {
     statusEl.style.color = '#fbbf24';
   }
 
-  // Update in IDB
   try {
     const botsData = await IDB.getAll('bots');
     const bots = Array.isArray(botsData) ? botsData : [];
@@ -147,11 +148,8 @@ export async function runBot(id) {
       bot.lastRun = Date.now();
       bot.runtime = (bot.runtime || 0) + 1;
       await IDB.batchSet('bots', [bot]);
-      // Update Firebase
       try {
-        const auth = getAuth();
-        const user = auth && auth.currentUser;
-        const uid = user ? user.uid : (JSON.parse(localStorage.getItem('currentUser') || '{}').uid || 'guest');
+        const uid = getUid();
         await set(dbRef(`users/${uid}/bots/${id}`), bot);
       } catch (e) { /* silent */ }
     }
@@ -182,7 +180,6 @@ export async function runBot(id) {
   }, 2000);
 }
 
-// Expose to global scope for inline onclick handlers
 window.runBotById = runBot;
 window.deleteBotById = deleteBot;
 
@@ -196,7 +193,6 @@ export async function deleteBot(id) {
   } catch (err) {
     console.warn('Failed to remove bot from Firebase:', err);
   }
-  // Check if list is now empty
   const container = document.getElementById('bot-list');
   if (container && container.children.length === 0) {
     container.innerHTML = '<p style="color:var(--tone-soft,#aaa);font-size:0.9rem;">No bots yet. Create your first bot above!</p>';
