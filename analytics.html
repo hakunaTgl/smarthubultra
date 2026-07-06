@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Hub Ultra - Analytics</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    .stat-card { padding:1.5rem; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); text-align:center; }
+    .stat-value { font-size:2.2rem; font-weight:700; color:#a5b4fc; }
+    .stat-label { font-size:0.82rem; color:var(--tone-soft,#aaa); margin-top:0.25rem; }
+    .bar { height:12px; border-radius:6px; background:rgba(99,102,241,0.25); margin-bottom:0.75rem; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,#6366f1,#a5b4fc); transition:width 0.5s; }
+  </style>
+</head>
+<body>
+  <nav class="app-nav" style="background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.08);padding:0.6rem 1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+    <a href="/index.html" style="color:var(--tone-soft,#888);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(255,255,255,0.12);">← Home</a>
+    <a href="/dashboard.html" style="color:var(--accent,#a5b4fc);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(165,180,252,0.3);">🏠 Dashboard</a>
+    <span style="font-size:0.82rem;color:var(--tone-soft,#888);margin-left:auto;">📊 Analytics</span>
+  </nav>
+  <div class="page">
+    <div class="page-content glassmorphic" style="padding:2rem;max-width:960px;margin:2rem auto;">
+      <h2 style="margin-bottom:0.5rem;">📊 Analytics</h2>
+      <p style="color:var(--tone-soft,#aaa);margin-bottom:2rem;">Track bot performance, activity trends, and system health metrics.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1.2rem;margin-bottom:2rem;" id="stats-grid"></div>
+      <h3 style="margin-bottom:1rem;font-size:0.95rem;">Bot Template Usage</h3>
+      <div id="usage-bars"></div>
+      <h3 style="margin-top:1.5rem;margin-bottom:1rem;font-size:0.95rem;">Activity Log</h3>
+      <div id="activity-log" style="font-family:monospace;font-size:0.82rem;color:var(--tone-soft,#aaa);"></div>
+    </div>
+  </div>
+  <script>
+    function loadAnalytics() {
+      const botsRaw = JSON.parse(localStorage.getItem('shu_idb_bots') || '[]');
+      const bots = Array.isArray(botsRaw) ? botsRaw.filter(b => !b._delete) : [];
+      const totalBots = bots.length;
+      const activeBots = bots.filter(b => b.status === 'active').length;
+      const totalRuns = bots.reduce((s, b) => s + (b.runtime || 0), 0);
+      const statsData = [
+        { value: totalBots, label: 'Total Bots' },
+        { value: activeBots, label: 'Active Bots' },
+        { value: totalRuns, label: 'Total Runs' },
+        { value: bots.filter(b => b.lastRun && (Date.now() - b.lastRun < 86400000)).length, label: 'Active (24h)' }
+      ];
+      const statsGrid = document.getElementById('stats-grid');
+      statsData.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'stat-card';
+        card.innerHTML = '<div class="stat-value">' + s.value + '</div><div class="stat-label">' + s.label + '</div>';
+        statsGrid.appendChild(card);
+      });
+      const templateCounts = {};
+      bots.forEach(b => { const t = b.template || 'Custom'; templateCounts[t] = (templateCounts[t] || 0) + 1; });
+      const maxCount = Math.max(...Object.values(templateCounts), 1);
+      const usageBars = document.getElementById('usage-bars');
+      Object.entries(templateCounts).sort((a,b) => b[1]-a[1]).forEach(([name, count]) => {
+        const pct = Math.round((count / maxCount) * 100);
+        usageBars.innerHTML += '<div style="margin-bottom:0.75rem;"><div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:0.3rem;"><span>' + name + '</span><span style="color:#a5b4fc;">' + count + '</span></div><div class="bar"><div class="bar-fill" style="width:' + pct + '%"></div></div></div>';
+      });
+      if (!Object.keys(templateCounts).length) usageBars.innerHTML = '<p style="color:var(--tone-soft,#aaa);font-size:0.88rem;">No bots created yet. <a href="/bots.html" style="color:#a5b4fc;">Create your first bot.</a></p>';
+      const actLog = document.getElementById('activity-log');
+      const logs = JSON.parse(localStorage.getItem('shu_activity_log') || '[]');
+      if (logs.length) {
+        actLog.innerHTML = logs.slice(-10).reverse().map(l => '[' + new Date(l.timestamp || Date.now()).toLocaleString() + '] ' + (l.action || l)).join('<br>');
+      } else actLog.textContent = 'No activity recorded yet.';
+    }
+    loadAnalytics();
+  </script>
+  <script src="/js/main.js" type="module"></script>
+</body>
+</html>
