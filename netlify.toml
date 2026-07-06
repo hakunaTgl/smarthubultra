@@ -1,13 +1,19 @@
 [build]
-  command = "npm run build"
-  publish = "dist"
-
-[build.environment]
-  NODE_VERSION = "22"
+  publish = "."
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from = "/dashboard"
+  to = "/dashboard.html"
+  status = 200
+
+[[redirects]]
+  from = "/bots"
+  to = "/bots.html"
+  status = 200
+
+[[redirects]]
+  from = "/boss"
+  to = "/boss.html"
   status = 200
 
 [[headers]]
