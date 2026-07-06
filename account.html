@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Hub Ultra - Account</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    .field-row { display:flex; flex-direction:column; gap:0.4rem; margin-bottom:1.25rem; }
+    .field-row label { font-size:0.82rem; color:var(--tone-soft,#aaa); }
+    .field-row input { padding:0.6rem 0.9rem; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:rgba(0,0,0,0.3); color:#e2e8f0; font-size:0.9rem; }
+    .save-btn { padding:0.5rem 1.4rem; border-radius:8px; border:none; background:rgba(99,102,241,0.3); color:#a5b4fc; cursor:pointer; font-size:0.9rem; font-weight:600; }
+    .save-btn:hover { background:rgba(99,102,241,0.5); }
+    .section-card { padding:1.5rem; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); margin-bottom:1.5rem; }
+  </style>
+</head>
+<body>
+  <nav class="app-nav" style="background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.08);padding:0.6rem 1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+    <a href="/index.html" style="color:var(--tone-soft,#888);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(255,255,255,0.12);">← Home</a>
+    <a href="/dashboard.html" style="color:var(--accent,#a5b4fc);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(165,180,252,0.3);">🏠 Dashboard</a>
+    <span style="font-size:0.82rem;color:var(--tone-soft,#888);margin-left:auto;">👤 Account</span>
+  </nav>
+  <div class="page">
+    <div class="page-content glassmorphic" style="padding:2rem;max-width:700px;margin:2rem auto;">
+      <h2 style="margin-bottom:0.5rem;">👤 Account Settings</h2>
+      <p style="color:var(--tone-soft,#aaa);margin-bottom:2rem;">Manage your profile, preferences, and build reference codes.</p>
+      <div class="section-card">
+        <h3 style="margin-bottom:1rem;font-size:0.95rem;">💼 Profile</h3>
+        <div class="field-row"><label>Username</label><input id="acc-username" placeholder="Your username" /></div>
+        <div class="field-row"><label>Display Name</label><input id="acc-display" placeholder="Your display name" /></div>
+        <div class="field-row"><label>Email</label><input id="acc-email" type="email" placeholder="your@email.com" /></div>
+        <button class="save-btn" onclick="saveProfile()">Save Profile</button>
+        <div id="profile-status" style="margin-top:0.75rem;font-size:0.82rem;color:var(--tone-soft,#aaa);"></div>
+      </div>
+      <div class="section-card">
+        <h3 style="margin-bottom:1rem;font-size:0.95rem;">🔑 Build Reference Code</h3>
+        <p style="color:var(--tone-soft,#aaa);font-size:0.88rem;margin-bottom:1rem;">Your current build reference code. Use this to resume your session.</p>
+        <div style="display:flex;gap:0.75rem;align-items:center;">
+          <input id="ref-code" readonly style="flex:1;padding:0.6rem 0.9rem;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.3);color:#a5b4fc;font-family:monospace;font-size:1rem;letter-spacing:2px;" />
+          <button class="save-btn" onclick="copyRefCode()">Copy</button>
+          <button class="save-btn" style="background:rgba(239,68,68,0.15);color:#fca5a5;" onclick="regenerateCode()">New Code</button>
+        </div>
+      </div>
+      <div class="section-card">
+        <h3 style="margin-bottom:1rem;font-size:0.95rem;">⚠️ Danger Zone</h3>
+        <p style="color:var(--tone-soft,#aaa);font-size:0.88rem;margin-bottom:1rem;">Clear all locally stored bots and activity data.</p>
+        <button class="save-btn" style="background:rgba(239,68,68,0.2);color:#fca5a5;" onclick="clearAllData()">Clear All Local Data</button>
+        <div id="danger-status" style="margin-top:0.75rem;font-size:0.82rem;color:var(--tone-soft,#aaa);"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    function loadProfile() {
+      const p = JSON.parse(localStorage.getItem('shu_profile') || '{}');
+      if (p.username) document.getElementById('acc-username').value = p.username;
+      if (p.display) document.getElementById('acc-display').value = p.display;
+      if (p.email) document.getElementById('acc-email').value = p.email;
+      let code = localStorage.getItem('shu_ref_code');
+      if (!code) { code = Math.floor(100000 + Math.random() * 900000).toString(); localStorage.setItem('shu_ref_code', code); }
+      document.getElementById('ref-code').value = code;
+    }
+    function saveProfile() {
+      const p = { username: document.getElementById('acc-username').value.trim(), display: document.getElementById('acc-display').value.trim(), email: document.getElementById('acc-email').value.trim() };
+      localStorage.setItem('shu_profile', JSON.stringify(p));
+      document.getElementById('profile-status').textContent = 'Profile saved at ' + new Date().toLocaleTimeString();
+    }
+    function copyRefCode() { const code = document.getElementById('ref-code').value; navigator.clipboard.writeText(code).then(() => document.getElementById('profile-status').textContent = 'Code copied!').catch(() => {}); }
+    function regenerateCode() { const code = Math.floor(100000 + Math.random() * 900000).toString(); localStorage.setItem('shu_ref_code', code); document.getElementById('ref-code').value = code; }
+    function clearAllData() {
+      if (!confirm('Clear ALL local data? This cannot be undone.')) return;
+      localStorage.removeItem('shu_idb_bots'); localStorage.removeItem('shu_activity_log'); localStorage.removeItem('shu_editor_code');
+      document.getElementById('danger-status').textContent = 'Local data cleared.';
+    }
+    loadProfile();
+  </script>
+  <script src="/js/main.js" type="module"></script>
+</body>
+</html>
