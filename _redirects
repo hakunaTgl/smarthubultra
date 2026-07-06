@@ -1,3 +1,14 @@
-/dashboard  /dashboard.html  200
-/bots       /bots.html      200
-/boss       /boss.html      200
+/dashboard    /dashboard.html    200
+/bots         /bots.html         200
+/boss         /boss.html         200
+/workshop     /workshop.html     200
+/editor       /editor.html       200
+/playground   /playground.html   200
+/inspiration  /inspiration.html  200
+/creators     /creators.html     200
+/collab       /collab.html       200
+/voice        /voice.html        200
+/analytics    /analytics.html    200
+/account      /account.html      200
+/manual       /manual.html       200
+/ar           /dashboard.html    200
