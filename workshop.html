@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Hub Ultra - Workshop</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+  <nav class="app-nav" style="background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.08);padding:0.6rem 1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+    <a href="/index.html" style="color:var(--tone-soft,#888);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(255,255,255,0.12);">← Home</a>
+    <a href="/dashboard.html" style="color:var(--accent,#a5b4fc);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(165,180,252,0.3);">🏠 Dashboard</a>
+    <a href="/bots.html" style="color:var(--accent,#a5b4fc);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(165,180,252,0.3);">🤖 Bots</a>
+    <a href="/boss.html" style="color:var(--accent,#a5b4fc);text-decoration:none;font-size:0.85rem;padding:0.3rem 0.75rem;border-radius:20px;border:1px solid rgba(165,180,252,0.3);">🕵 Boss View</a>
+    <span style="font-size:0.82rem;color:var(--tone-soft,#888);margin-left:auto;">🛠 Workshop</span>
+  </nav>
+  <div class="page">
+    <div class="page-content glassmorphic" style="padding:2rem;max-width:900px;margin:2rem auto;">
+      <h2 style="margin-bottom:0.5rem;">🛠 Workshop</h2>
+      <p style="color:var(--tone-soft,#aaa);margin-bottom:2rem;">Build, configure, and test your bots and automations in a hands-on environment.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;">
+        <div class="glass-card" style="padding:1.5rem;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+          <h3 style="margin-bottom:0.5rem;">⚙️ Bot Builder</h3>
+          <p style="color:var(--tone-soft,#aaa);font-size:0.9rem;margin-bottom:1rem;">Drag-and-drop interface to assemble bot logic and workflows.</p>
+          <a href="/bots.html" style="display:inline-block;padding:0.5rem 1.2rem;border-radius:8px;background:rgba(99,102,241,0.2);color:#a5b4fc;text-decoration:none;font-size:0.85rem;">Open Bot Builder →</a>
+        </div>
+        <div class="glass-card" style="padding:1.5rem;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+          <h3 style="margin-bottom:0.5rem;">🧪 Sandbox</h3>
+          <p style="color:var(--tone-soft,#aaa);font-size:0.9rem;margin-bottom:1rem;">Run bots in an isolated environment before deploying to production.</p>
+          <a href="/test.html" style="display:inline-block;padding:0.5rem 1.2rem;border-radius:8px;background:rgba(99,102,241,0.2);color:#a5b4fc;text-decoration:none;font-size:0.85rem;">Open Sandbox →</a>
+        </div>
+        <div class="glass-card" style="padding:1.5rem;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+          <h3 style="margin-bottom:0.5rem;">📝 Code Editor</h3>
+          <p style="color:var(--tone-soft,#aaa);font-size:0.9rem;margin-bottom:1rem;">Write and edit custom bot scripts with syntax highlighting.</p>
+          <a href="/editor.html" style="display:inline-block;padding:0.5rem 1.2rem;border-radius:8px;background:rgba(99,102,241,0.2);color:#a5b4fc;text-decoration:none;font-size:0.85rem;">Open Editor →</a>
+        </div>
+        <div class="glass-card" style="padding:1.5rem;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+          <h3 style="margin-bottom:0.5rem;">📦 Templates</h3>
+          <p style="color:var(--tone-soft,#aaa);font-size:0.9rem;margin-bottom:1rem;">Start from proven templates: Echo, Greeting, Support, Analytics, and more.</p>
+          <a href="/bots.html" style="display:inline-block;padding:0.5rem 1.2rem;border-radius:8px;background:rgba(99,102,241,0.2);color:#a5b4fc;text-decoration:none;font-size:0.85rem;">Browse Templates →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="/js/main.js" type="module"></script>
+</body>
+</html>
