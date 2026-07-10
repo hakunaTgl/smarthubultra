@@ -1,9 +1,17 @@
- import { showToast, speak, logActivity, closeAllModals } from './utils.js';
+import { showToast, speak, logActivity, closeAllModals } from './utils.js';
 import { loadDashboard } from './dashboard.js';
-import { connectO7 } from './o7integration.js';
 import { startHoloGuide } from './holoGuide.js';
 import { dbRef, set, get, update, auth, functions, httpsCallable, FUNCTIONS_BASE_URL } from './firebaseConfig.js';
 import { sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
+import {
+  trackLoginAttempt,
+  trackLoginSuccess,
+  trackLoginFailure,
+  trackEmailSent,
+  trackEmailFailed,
+  trackAppProceed,
+  trackSessionCreated
+} from './loginMetrics.js';
 
 const MAGIC_LINK_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
 const ADMIN_FASTPASS_CODE = 'SMARTHUB-EXEC-2025';
@@ -72,17 +80,26 @@ function describeExpiry(expiresAt) {
 
 async function createSessionForUser(userKey, email, extra = {}) {
   const sessionId = makeSessionId();
+  const method = extra.method || 'email-link';
   const session = {
     id: sessionId,
     user: userKey,
     email,
     createdAt: Date.now(),
-    method: extra.method || 'email-link',
+    method,
     instanceCode: extra.code || null,
     userAgent: navigator.userAgent || null,
     billing: { amount: 0, currency: 'USD' }
   };
   await set(dbRef(`sessions/${sessionId}`), session);
+  
+  // Track session creation for login metrics
+  try {
+    await trackSessionCreated(sessionId, userKey, method);
+  } catch (metricsErr) {
+    console.warn('[LoginMetrics] Failed to track session creation:', metricsErr);
+  }
+  
   try {
     const userSnap = await get(dbRef(`users/${userKey}`));
     if (userSnap.exists()) {
@@ -249,22 +266,27 @@ async function completeFallbackMagicLink(token) {
     const snap = await get(ref);
     if (!snap.exists()) {
       showToast('Magic link invalid or already cleared.');
+      await trackLoginFailure(null, 'magic-link', 'Invalid or cleared magic link');
       return false;
     }
     const entry = snap.val();
     if (entry.used) {
       showToast('Magic link already used. Request a fresh link.');
+      await trackLoginFailure(entry.email, 'magic-link', 'Magic link already used');
       return false;
     }
     if (entry.expiresAt && entry.expiresAt < Date.now()) {
       showToast('Magic link expired. Request a new one.');
+      await trackLoginFailure(entry.email, 'magic-link', 'Magic link expired');
       return false;
     }
+    
+    const loginMethod = entry.metadata?.method || 'magic-link';
     const overrides = entry.metadata?.overrides || {};
     const key = await ensureUserRecord(entry.email, overrides);
-    await createSessionForUser(key, entry.email, { method: entry.metadata?.method || 'magic-link' });
+    await createSessionForUser(key, entry.email, { method: loginMethod });
     await update(dbRef(`users/${key}`), {
-      lastSignInMethod: entry.metadata?.method || 'magic-link',
+      lastSignInMethod: loginMethod,
       lastEmailLink: {
         sentAt: entry.createdAt,
         usedAt: Date.now(),
@@ -273,14 +295,23 @@ async function completeFallbackMagicLink(token) {
       }
     });
     await update(ref, { used: true, usedAt: Date.now() });
+    
+    // Track successful login
+    await trackLoginSuccess(key, entry.email, loginMethod, { tokenSuffix: token.slice(-6) });
+    
     showToast('Signed in via instant magic link');
     logActivity('Signed in via instant magic link', { tokenSuffix: token.slice(-6) });
     closeAllModals();
     await startHoloGuide();
     await loadDashboard();
+    
+    // Track user proceeding to app
+    await trackAppProceed(key, 'dashboard', loginMethod);
+    
     return true;
   } catch (err) {
     console.error('completeFallbackMagicLink failed', err);
+    await trackLoginFailure(null, 'magic-link', 'Magic link sign-in failed', err);
     showToast('Magic link sign-in failed');
     return false;
   } finally {
@@ -308,6 +339,9 @@ async function allocateProjectCode(attempts = 5) {
 
 async function startGuestSession() {
   try {
+    // Track login attempt for guest session
+    await trackLoginAttempt('guest@guest.smarthub', 'guest');
+    
     const handle = pickRandom(GUEST_NAME_POOL) || 'Guest';
     const email = `guest+${Date.now()}@guest.smarthub`; 
     const key = await ensureUserRecord(email, {
@@ -322,19 +356,30 @@ async function startGuestSession() {
     });
     localStorage.removeItem('emailForSignIn');
     localStorage.removeItem('pendingUsername');
+    
+    // Track successful guest login
+    await trackLoginSuccess(key, email, 'guest', { guestHandle: handle });
+    
     showToast('Guest session activated');
     logActivity('guest-session:start', { user: key });
     closeAllModals();
     await startHoloGuide();
     await loadDashboard();
+    
+    // Track user proceeding to app
+    await trackAppProceed(key, 'dashboard', 'guest');
   } catch (err) {
     console.error('Guest session error', err);
+    await trackLoginFailure('guest@guest.smarthub', 'guest', 'Guest session failed', err);
     showToast('Unable to start guest session');
   }
 }
 
 async function startProjectSession(preferredName = '') {
   try {
+    // Track login attempt for project session
+    await trackLoginAttempt('project@projects.smarthub', 'project-code');
+    
     const code = await allocateProjectCode();
     const now = Date.now();
     const label = preferredName?.trim() || `Project-${code}`;
@@ -374,15 +419,24 @@ async function startProjectSession(preferredName = '') {
     if (resumeInput) {
       resumeInput.value = code;
     }
+    
+    // Track successful project session login
+    await trackLoginSuccess(key, email, 'project-code', { projectCode: code, projectLabel: label });
+    
     showProjectCodePanel(code, `Project session active • code ${code}`);
     showToast(`Project session ready. Code: ${code}`);
     logActivity('project-session:start', { code });
     closeAllModals();
     await startHoloGuide();
     await loadDashboard();
+    
+    // Track user proceeding to app
+    await trackAppProceed(key, 'dashboard', 'project-code');
+    
     return code;
   } catch (err) {
     console.error('Project session start failed', err);
+    await trackLoginFailure('project@projects.smarthub', 'project-code', 'Project session start failed', err);
     showToast('Unable to start project session');
     return null;
   }
@@ -392,23 +446,31 @@ async function resumeProjectSession(codeRaw) {
   const code = normalizeProjectCode(codeRaw);
   if (!code) {
     showToast('Enter a valid project code');
+    await trackLoginFailure(null, 'project-code', 'Invalid project code format');
     return false;
   }
+  
+  // Track login attempt for project resume
+  await trackLoginAttempt(`project+${code.toLowerCase()}@projects.smarthub`, 'project-code');
+  
   try {
     const snap = await get(dbRef(`projectSessions/${code}`));
     if (!snap.exists()) {
       showToast('Project code not found');
+      await trackLoginFailure(null, 'project-code', 'Project code not found');
       return false;
     }
     const entry = snap.val() || {};
     const userKey = entry.user;
     if (!userKey) {
       showToast('Project session is missing owner data');
+      await trackLoginFailure(null, 'project-code', 'Project session missing owner data');
       return false;
     }
     const userSnap = await get(dbRef(`users/${userKey}`));
     if (!userSnap.exists()) {
       showToast('Project user profile missing');
+      await trackLoginFailure(null, 'project-code', 'Project user profile missing');
       return false;
     }
     const user = userSnap.val() || {};
@@ -432,15 +494,24 @@ async function resumeProjectSession(codeRaw) {
     if (resumeInput) {
       resumeInput.value = code;
     }
+    
+    // Track successful project resume login
+    await trackLoginSuccess(userKey, email, 'project-code', { projectCode: code, resumed: true });
+    
     showProjectCodePanel(code, `Project session active • code ${code}`);
     showToast('Project session restored');
     logActivity('project-session:resume', { code });
     closeAllModals();
     await startHoloGuide();
     await loadDashboard();
+    
+    // Track user proceeding to app
+    await trackAppProceed(userKey, 'dashboard', 'project-code');
+    
     return true;
   } catch (err) {
     console.error('Project session resume failed', err);
+    await trackLoginFailure(null, 'project-code', 'Project session resume failed', err);
     showToast('Unable to resume project session');
     return false;
   }
@@ -485,13 +556,19 @@ async function fastLoginAsAdmin() {
   const trimmed = code.trim();
   if (trimmed !== ADMIN_FASTPASS_CODE) {
     showToast('Invalid executive override code');
+    await trackLoginFailure(null, 'admin-fastpass', 'Invalid executive override code');
     return;
   }
   const email = window.prompt('Admin email', CORE_ACCOUNTS[0]?.email || 'boss@smarthubultra.dev');
   if (!email) {
     showToast('Admin email required');
+    await trackLoginFailure(null, 'admin-fastpass', 'Admin email not provided');
     return;
   }
+  
+  // Track login attempt
+  await trackLoginAttempt(email, 'admin-fastpass');
+  
   const target = CORE_ACCOUNTS.find(account => account.email.toLowerCase() === email.toLowerCase());
   const profile = target || {
     email,
@@ -503,15 +580,18 @@ async function fastLoginAsAdmin() {
   const currentEmail = (auth.currentUser?.email || '').toLowerCase();
   if (!currentEmail) {
     showToast('Sign in with a magic link before using the override');
+    await trackLoginFailure(email, 'admin-fastpass', 'Not signed in with Firebase');
     return;
   }
   if (currentEmail !== profile.email.toLowerCase()) {
     showToast('Admin override requires signing in with that admin address first');
+    await trackLoginFailure(email, 'admin-fastpass', 'Email mismatch with current session');
     return;
   }
   try {
     const claims = await grantAdminClaims(profile.email, trimmed);
     if (!claims) {
+      await trackLoginFailure(email, 'admin-fastpass', 'Admin claims grant failed');
       return;
     }
     const key = await ensureUserRecord(profile.email, {
@@ -528,13 +608,24 @@ async function fastLoginAsAdmin() {
     localStorage.removeItem('emailForSignIn');
     localStorage.removeItem('pendingUsername');
     await createSessionForUser(key, profile.email, { method: 'admin-fastpass' });
+    
+    // Track successful admin login
+    await trackLoginSuccess(key, profile.email, 'admin-fastpass', { 
+      role: profile.role, 
+      accessTier: profile.accessTier 
+    });
+    
     showToast('Executive session restored');
     logActivity('admin-fastpass', { account: profile.email });
     closeAllModals();
     await startHoloGuide();
     await loadDashboard();
+    
+    // Track user proceeding to app
+    await trackAppProceed(key, 'dashboard', 'admin-fastpass');
   } catch (err) {
     console.error('Admin fast login failed', err);
+    await trackLoginFailure(email, 'admin-fastpass', 'Admin session start failed', err);
     showToast('Unable to start admin session');
   }
 }
@@ -674,6 +765,9 @@ export async function loadAuth() {
         return null;
       }
 
+      // Track login attempt when sending sign-in link
+      await trackLoginAttempt(email, 'email-link');
+
       const overrides = {
         lastEmailLink: {
           sentAt: Date.now(),
@@ -704,18 +798,22 @@ export async function loadAuth() {
       }
 
       // Attempt to send the Firebase email link; if it fails, open the user's mail client prefilled with the fallback URL
-      let emailSent = false;
       try {
         await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-        emailSent = true;
+        // Track successful email sending
+        await trackEmailSent(email, 'sign-in', 'firebase');
         showToast('Sign-in email dispatched. Check your inbox.');
         logActivity('Sent sign-in link', { channel: 'email', email });
       } catch (err) {
         console.error('sendSignInLinkToEmail failed', err);
+        // Track email sending failure
+        await trackEmailFailed(email, 'sign-in', err.message, err);
         showToast('Email delivery failed — providing instant link and a prefilled email draft.');
         if (fallback && email) {
           // Open mail client with prefilled subject/body so user can forward/copy the link
           openMailClient(email, 'SmartHubUltra sign-in link', `Use this link to sign in: ${fallback.url}\n\nLink expires in ${describeExpiry(fallback.expiresAt)}`);
+          // Track fallback email attempt
+          await trackEmailSent(email, 'sign-in', 'mail-client-fallback');
         }
       }
 
@@ -846,10 +944,18 @@ export async function loadAuth() {
               delivered: !!result?.delivered,
               source: 'cloud-function'
             };
+            // Track invite email sending
+            if (result?.delivered) {
+              await trackEmailSent(email, 'invite', 'sendgrid');
+            } else {
+              await trackEmailSent(email, 'invite', 'link-only');
+            }
             showToast(result?.delivered ? 'Invite email dispatched' : 'Invite link ready to share');
             logActivity('Generated invite link', { email, role, delivered: !!result?.delivered });
           } catch (inviteErr) {
             console.error('Transactional invite failed', inviteErr);
+            // Track invite email failure
+            await trackEmailFailed(email, 'invite', inviteErr.message, inviteErr);
             const fallback = await generateFallbackMagicLink(email, { overrides, method: 'invite-link' });
             linkDetails = {
               url: fallback?.url,
@@ -874,6 +980,7 @@ export async function loadAuth() {
           }
         } catch (err) {
           console.error('Invite generation failed', err);
+          await trackEmailFailed(email, 'invite', 'Invite generation failed', err);
           showToast('Failed to generate invite link');
         }
       });
@@ -938,6 +1045,13 @@ export async function loadAuth() {
               status: 'used'
             }
           });
+          
+          // Track successful login via email link
+          await trackLoginSuccess(key, user.email, 'email-link', { 
+            firebaseUid: user.uid,
+            username: pendingUsername 
+          });
+          
           hideLinkPanel(fallbackPanel, fallbackMeta, fallbackLinkInput);
           showToast('Signed in with email link');
           logActivity('Signed in via email link');
@@ -946,8 +1060,12 @@ export async function loadAuth() {
           closeAllModals();
           await startHoloGuide();
           await loadDashboard();
+          
+          // Track user proceeding to app
+          await trackAppProceed(key, 'dashboard', 'email-link');
         } catch (err) {
           console.error('signInWithEmailLink', err);
+          await trackLoginFailure(email, 'email-link', 'Failed to complete sign-in', err);
           showToast('Failed to complete sign-in');
         }
       }
